@@ -1,6 +1,5 @@
 package com.bochicapp.gym.ui.custom
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bochicapp.gym.ui.model.*
+import com.bochicapp.gym.data.model.DataElement
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
@@ -31,16 +30,16 @@ fun Principal (
 ){
 
     val options = listOf(
-        PElement(
-            text = "Iniciar rutina",
-            onClick = {
-                viewModel.iniciarRutina()
+        DataElement(
+            name = "Iniciar rutina",
+            onClick = { vm ->
+                vm.goTo( Views.EjecucionV )
             }
         ),
-        PElement(
-            text = "Gestionar rutinas",
-            onClick = {
-                viewModel.gestionarRutinas()
+        DataElement(
+            name = "Informacion de usuario",
+            onClick = { vm ->
+                vm.goTo( Views.InfoUsuarioV )
             }
         )
     )
@@ -55,7 +54,7 @@ fun Principal (
 
             Box(
                 modifier = Modifier
-                    .size(200.dp)
+                    .size(220.dp)
                     .padding( 10.dp )
                     .shadow(
                         elevation = 15.dp,
@@ -64,7 +63,7 @@ fun Principal (
                     .background( Color.White )
                     .clickable(
                         onClick = {
-                            element.onClick()
+                            element.onClick( viewModel )
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -73,7 +72,7 @@ fun Principal (
                 Text(
                     modifier = Modifier
                         .padding(10.dp),
-                    text = element.text,
+                    text = element.name,
                     fontSize = 30.sp,
                     textAlign = TextAlign.Center
                 )
