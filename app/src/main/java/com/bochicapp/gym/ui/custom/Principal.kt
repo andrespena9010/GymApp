@@ -1,5 +1,6 @@
 package com.bochicapp.gym.ui.custom
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -23,6 +25,7 @@ import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun Principal (
     viewModel: GymViewModelClass = GymViewModel,
@@ -32,12 +35,14 @@ fun Principal (
     val options = listOf(
         DataElement(
             name = "Iniciar rutina",
+            value = mutableStateOf( "" ),
             onClick = { vm ->
                 vm.goTo( Views.EjecucionV )
             }
         ),
         DataElement(
             name = "Informacion de usuario",
+            value = mutableStateOf( "" ),
             onClick = { vm ->
                 vm.goTo( Views.InfoUsuarioV )
             }

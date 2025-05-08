@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.HorizontalDivider
@@ -29,13 +31,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bochicapp.gym.data.model.Data
+import com.bochicapp.gym.data.model.Dat
 import com.bochicapp.gym.data.model.DataElement
+import com.bochicapp.gym.data.model.ProximoObjetivo
 import com.bochicapp.gym.data.model.TomaDatosFisicos
+import com.bochicapp.gym.data.model.allComplete
+import com.bochicapp.gym.data.model.comparaObjetos
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
@@ -46,22 +52,33 @@ fun TomaDatos (
     modifier: Modifier
 ) {
 
-    val datosList by viewModel.datosList.collectAsStateWithLifecycle()
-    val infoList = mutableListOf<List<DataElement>>()
-    datosList.forEach { toma ->
-        infoList.add( toma.toDataList() )
+    val usuario by viewModel.usuario.collectAsStateWithLifecycle()
+    val tomasList = mutableListOf<List<DataElement<Any>>>()
+    usuario.tomadatosfisicos.forEach { toma ->
+        tomasList.add( toma.toDataList() )
     }
-    val info by rememberSaveable { mutableStateOf( infoList.toList() ) }
-    var edit by rememberSaveable { mutableStateOf( false ) }
+    val tomas by rememberSaveable { mutableStateOf( tomasList.toList() ) }
+
+    var editToma by rememberSaveable { mutableStateOf( false ) }
+    var editObjetivo by rememberSaveable { mutableStateOf( false ) }
     val fondo by animateColorAsState(
-        targetValue = if (edit) Color( 0x55000000 ) else Color( 0xCCFFFFFF ),
+        targetValue = if (editToma) Color( 0x55000000 ) else Color( 0xCCFFFFFF ),
         animationSpec = tween(durationMillis = 1000)
     )
-    var tomaToAdd = TomaDatosFisicos("").toDataList()
+    var tomaToAdd by rememberSaveable { mutableStateOf( TomaDatosFisicos().toDataList() ) }
+    var objetivoToAdd by rememberSaveable { mutableStateOf( ProximoObjetivo().toDataList() ) }
+    var labelColor = if ( editToma ) Color.White else Color.Black
 
-    /*LaunchedEffect( usuario, edit ) {
-        changes = !compara( info, usuario.toDataList() )
-    }*/
+    var saveToma by rememberSaveable { mutableStateOf( false ) }
+    var saveObjetivo by rememberSaveable { mutableStateOf( false ) }
+
+    LaunchedEffect( usuario, editToma ) {
+        saveToma = allComplete( tomaToAdd )
+    }
+
+    LaunchedEffect( usuario, editObjetivo ) {
+        saveObjetivo = allComplete( objetivoToAdd )
+    }
 
     BackHandler {
         viewModel.goTo( Views.InfoUsuarioV )
@@ -87,7 +104,7 @@ fun TomaDatos (
                 .background( Color( 0xFFCCCCCC ) )
                 .clickable(
                     onClick = {
-                        edit = !edit
+                        editToma = !editToma
                     }
                 ),
             contentAlignment = Alignment.Center
@@ -98,21 +115,25 @@ fun TomaDatos (
             )
         }
 
-        if ( info.isEmpty() ){
+        if ( tomas.isEmpty() ){
 
-            Text("No hay tomas de datos")
+            if ( !editToma ){
+
+                Text("No hay tomas de datos")
+
+            }
 
         } else {
 
-            LazyColumn (
+            /*LazyColumn (
                 modifier = Modifier
                     .padding( 15.dp )
                     .fillMaxHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
-                items ( info ){ toma ->
+                items ( tomas ){ toma ->
 
-                    /*when ( toma.type ){
+                    when ( toma.type ){ // TODO: mostrar todas las tomas de datos y permitir editarlas
 
                         Data.Png -> {
 
@@ -191,86 +212,273 @@ fun TomaDatos (
 
                         }
 
-                    }*/
+                    }
 
                 }
-            }
+            }*/
 
         }
 
-        if ( edit ){
+        if ( editToma ){
 
-            LazyColumn (
-                modifier = Modifier
-                    .padding( 15.dp )
-                    .fillMaxHeight(0.8f)
-                    .fillMaxWidth(0.8f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ){
-                items ( tomaToAdd ){ toma ->
+            if ( editObjetivo ){
 
-                    when ( toma.type ){
+                LazyColumn (
+                    modifier = Modifier
+                        .padding( 15.dp )
+                        .fillMaxHeight(0.8f)
+                        .fillMaxWidth(0.8f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ){
+                    items ( objetivoToAdd ){ objetivo ->
 
-                        Data.Txt -> {
+                        when ( objetivo.type ){
 
-                            Column (
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                            ){
-                                HorizontalDivider()
-                                Text(
-                                    text = toma.name,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                BasicTextField(
+                            Dat.Txt -> {
+
+                                Column (
                                     modifier = Modifier
-                                        .padding(5.dp)
                                         .fillMaxWidth()
-                                        .clip( RoundedCornerShape( 5.dp ) )
-                                        .background( if ( edit ) Color( 0xCCFFFFFF ) else Color.Transparent ),
-                                    value = toma.value?.value.toString(),
-                                    onValueChange = { toma.value?.value = it },
-                                    enabled = edit
-                                )
+                                ){
+                                    HorizontalDivider()
+                                    Text(
+                                        text = objetivo.name,
+                                        fontWeight = FontWeight.Bold,
+                                        color = labelColor
+                                    )
+                                    BasicTextField(
+                                        modifier = Modifier
+                                            .padding(5.dp)
+                                            .fillMaxWidth()
+                                            .clip( RoundedCornerShape( 5.dp ) )
+                                            .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                        value = objetivo.value.value.toString(),
+                                        onValueChange = { objetivo.value.value = it },
+                                        enabled = editToma
+                                    )
+                                }
+
                             }
 
-                        }
+                            Dat.Dobl -> {
 
-                        Data.Ls -> { // TODO: y aca que???
-
-                            Column (
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                            ){
-                                HorizontalDivider()
-                                Text(
-                                    text = toma.name,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Box(
+                                Column (
                                     modifier = Modifier
-                                        .padding( 10.dp )
-                                        .align( Alignment.CenterHorizontally )
-                                        .width( 100.dp )
-                                        .height( 40.dp )
-                                        .shadow(
-                                            elevation = 5.dp,
-                                            shape = RoundedCornerShape( 20.dp )
-                                        )
-                                        .clip( RoundedCornerShape( 20.dp ) )
-                                        .background( Color( 0xFFCCCCCC ) ),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxWidth()
                                 ){
-                                    Text("Detalles")
+                                    HorizontalDivider()
+                                    Text(
+                                        text = objetivo.name,
+                                        fontWeight = FontWeight.Bold,
+                                        color = labelColor
+                                    )
+                                    BasicTextField(
+                                        modifier = Modifier
+                                            .padding(5.dp)
+                                            .fillMaxWidth()
+                                            .clip( RoundedCornerShape( 5.dp ) )
+                                            .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                        value = objetivo.value.value.toString(),
+                                        onValueChange = {
+                                            objetivo.value.value = if ( Regex("^$|^\\d+|\\d+\\.|\\d+\\.\\d+$").matches( it ) ) it else "0"
+                                        },
+                                        enabled = editToma,
+                                        keyboardOptions = KeyboardOptions( keyboardType = KeyboardType.Number )
+                                    )
                                 }
+
                             }
 
                         }
 
                     }
+                }
 
+                Row(
+                    modifier = Modifier
+                    ,
+                    verticalAlignment =
+                ){
+                    // agregar botones de crear objetivo y cancelar. con advertencia de que ningun dato puede estar vacio.
+                }
+
+            } else {
+
+                LazyColumn (
+                    modifier = Modifier
+                        .padding( 15.dp )
+                        .fillMaxHeight(0.8f)
+                        .fillMaxWidth(0.8f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ){
+                    items ( tomaToAdd ){ toma ->
+
+                        when ( toma.type ){
+
+                            Dat.Txt -> {
+
+                                Column (
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ){
+                                    HorizontalDivider()
+                                    Text(
+                                        text = toma.name,
+                                        fontWeight = FontWeight.Bold,
+                                        color = labelColor
+                                    )
+                                    BasicTextField(
+                                        modifier = Modifier
+                                            .padding(5.dp)
+                                            .fillMaxWidth()
+                                            .clip( RoundedCornerShape( 5.dp ) )
+                                            .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                        value = toma.value.value.toString(),
+                                        onValueChange = { toma.value.value = it },
+                                        enabled = editToma
+                                    )
+                                }
+
+                            }
+
+                            Dat.Dobl -> {
+
+                                Column (
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ){
+                                    HorizontalDivider()
+                                    Text(
+                                        text = toma.name,
+                                        fontWeight = FontWeight.Bold,
+                                        color = labelColor
+                                    )
+                                    BasicTextField(
+                                        modifier = Modifier
+                                            .padding(5.dp)
+                                            .fillMaxWidth()
+                                            .clip( RoundedCornerShape( 5.dp ) )
+                                            .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                        value = toma.value.value.toString(),
+                                        onValueChange = {
+                                            toma.value.value = if ( Regex("^$|^\\d+|\\d+\\.|\\d+\\.\\d+$").matches( it ) ) it else "0"
+                                        },
+                                        enabled = editToma,
+                                        keyboardOptions = KeyboardOptions( keyboardType = KeyboardType.Number )
+                                    )
+                                }
+
+                            }
+
+                            Dat.Lnk -> {
+
+                                Column (
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ){
+
+                                    HorizontalDivider()
+                                    Text(
+                                        text = toma.name,
+                                        fontWeight = FontWeight.Bold,
+                                        color = labelColor
+                                    )
+                                    Text(
+                                        text = toma.value.value.toString()
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .padding( 10.dp )
+                                            .align( Alignment.CenterHorizontally )
+                                            .width( 200.dp )
+                                            .height( 40.dp )
+                                            .shadow(
+                                                elevation = 5.dp,
+                                                shape = RoundedCornerShape( 20.dp )
+                                            )
+                                            .clip( RoundedCornerShape( 20.dp ) )
+                                            .background( Color( 0xFFCCCCCC ) ),
+                                        contentAlignment = Alignment.Center
+                                    ){
+                                        Text("Seleccionar rutina")
+                                    }
+
+                                }
+
+                            }
+
+                            Dat.Ls -> {
+
+                                Column (
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                ){
+
+                                    if ( ( toma.value.value as List<*> ).isNotEmpty() ){
+
+                                        HorizontalDivider()
+                                        Text(
+                                            text = toma.name,
+                                            fontWeight = FontWeight.Bold,
+                                            color = labelColor
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .padding( 10.dp )
+                                                .align( Alignment.CenterHorizontally )
+                                                .width( 100.dp )
+                                                .height( 40.dp )
+                                                .shadow(
+                                                    elevation = 5.dp,
+                                                    shape = RoundedCornerShape( 20.dp )
+                                                )
+                                                .clip( RoundedCornerShape( 20.dp ) )
+                                                .background( Color( 0xFFCCCCCC ) ),
+                                            contentAlignment = Alignment.Center
+                                        ){
+                                            Text("Ver Objetivos")
+                                        }
+
+                                    } // TODO: mostrar todos los objetivos agregados en la toma y permitir editarlos
+
+                                    HorizontalDivider()
+                                    Text(
+                                        text = toma.name,
+                                        fontWeight = FontWeight.Bold,
+                                        color = labelColor
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .padding( 10.dp )
+                                            .align( Alignment.CenterHorizontally )
+                                            .width( 200.dp )
+                                            .height( 40.dp )
+                                            .shadow(
+                                                elevation = 5.dp,
+                                                shape = RoundedCornerShape( 20.dp )
+                                            )
+                                            .clip( RoundedCornerShape( 20.dp ) )
+                                            .background( Color( 0xFFCCCCCC ) )
+                                            .clickable(
+                                                onClick = {
+                                                    editObjetivo = true
+                                                }
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ){
+                                        Text("Agregar Objetivo")
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
                 }
             }
+
         }
 
     }

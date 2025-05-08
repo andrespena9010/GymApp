@@ -27,12 +27,16 @@ import com.bochicapp.gym.ui.viewmodel.GymViewModel
 fun Gym() {
 
     val viewModel = GymViewModel
-
     val selectedView by viewModel.selectedView.collectAsStateWithLifecycle()
-
+    val scope = rememberCoroutineScope()
+    val snackBarState = SnackbarHostState()
     val transTime = 500
 
-    Scaffold { innerpaddings ->
+    viewModel.setSnack( scope, snackBarState )
+
+    Scaffold (
+        snackbarHost = { SnackbarHost( snackBarState ) }
+    ){ innerpaddings ->
 
         Image(
             painter = painterResource(R.drawable.f1),

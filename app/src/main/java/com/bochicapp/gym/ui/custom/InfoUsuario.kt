@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bochicapp.gym.data.model.Data
-import com.bochicapp.gym.data.model.Usuario
+import com.bochicapp.gym.data.model.Dat
+import com.bochicapp.gym.data.model.UsuarioData
 import com.bochicapp.gym.data.model.comparaObjetos
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
@@ -51,16 +51,17 @@ fun InfoUsuario(
 ) {
 
     val usuario by viewModel.usuario.collectAsStateWithLifecycle()
-    val info by rememberSaveable { mutableStateOf( usuario.toDataList() ) }
+    val userData by rememberSaveable { mutableStateOf( usuario.toDataList() ) }
     var edit by rememberSaveable { mutableStateOf( false ) }
     var changes by rememberSaveable { mutableStateOf( false ) }
     val fondo by animateColorAsState(
         targetValue = if (edit) Color( 0x55000000 ) else Color( 0xCCFFFFFF ),
         animationSpec = tween(durationMillis = 1000)
     )
+    var labelColor = if ( edit ) Color.White else Color.Black
 
     LaunchedEffect( usuario, edit ) {
-        changes = !comparaObjetos( info, usuario.toDataList() )
+        changes = !comparaObjetos( userData, usuario.toDataList() )
     }
 
     BackHandler {
@@ -114,7 +115,7 @@ fun InfoUsuario(
                     .background( Color( 0xFF5555CC ) )
                     .clickable(
                         onClick = {
-                            viewModel.update( info, Usuario::class )
+                            viewModel.update( userData, UsuarioData::class )
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -129,15 +130,15 @@ fun InfoUsuario(
                 .fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally
         ){
-            items ( info ){ elemenet ->
+            items ( userData ){ elemenet ->
 
                 when ( elemenet.type ){
 
-                    Data.Png -> {
+                    Dat.Png -> { // TODO: Seleccionar y copiar foto de perfil
 
                         var image by remember { mutableStateOf( createBitmap(100, 100).asImageBitmap() ) }
                         viewModel.getPng(
-                            id = elemenet.value?.value.toString(),
+                            id = elemenet.value.value.toString(),
                             onLoad = { bitmap ->
                                 image = bitmap
                             }
@@ -154,7 +155,7 @@ fun InfoUsuario(
 
                     }
 
-                    Data.Txt -> {
+                    Dat.Txt -> {
 
                         Column (
                             modifier = Modifier
@@ -163,7 +164,8 @@ fun InfoUsuario(
                             HorizontalDivider()
                             Text(
                                 text = elemenet.name,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = labelColor
                             )
                             BasicTextField(
                                 modifier = Modifier
@@ -171,46 +173,51 @@ fun InfoUsuario(
                                     .fillMaxWidth()
                                     .clip( RoundedCornerShape( 5.dp ) )
                                     .background( if ( edit ) Color( 0xCCFFFFFF ) else Color.Transparent ),
-                                value = elemenet.value?.value.toString(),
-                                onValueChange = { elemenet.value?.value = it },
+                                value = elemenet.value.value.toString(),
+                                onValueChange = { elemenet.value.value = it },
                                 enabled = edit
                             )
                         }
 
                     }
 
-                    Data.Ls -> {
+                    Dat.Ls -> {
 
-                        Column (
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ){
-                            HorizontalDivider()
-                            Text(
-                                text = elemenet.name,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Box(
+                        if ( !edit ){
+
+                            Column (
                                 modifier = Modifier
-                                    .padding( 10.dp )
-                                    .align( Alignment.CenterHorizontally )
-                                    .width( 100.dp )
-                                    .height( 40.dp )
-                                    .shadow(
-                                        elevation = 5.dp,
-                                        shape = RoundedCornerShape( 20.dp )
-                                    )
-                                    .clip( RoundedCornerShape( 20.dp ) )
-                                    .background( Color( 0xFFCCCCCC ) )
-                                    .clickable(
-                                        onClick = {
-                                            elemenet.onClick( viewModel )
-                                        }
-                                    ),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
                             ){
-                                Text("Detalles")
+                                HorizontalDivider()
+                                Text(
+                                    text = elemenet.name,
+                                    fontWeight = FontWeight.Bold,
+                                    color = labelColor
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .padding( 10.dp )
+                                        .align( Alignment.CenterHorizontally )
+                                        .width( 100.dp )
+                                        .height( 40.dp )
+                                        .shadow(
+                                            elevation = 5.dp,
+                                            shape = RoundedCornerShape( 20.dp )
+                                        )
+                                        .clip( RoundedCornerShape( 20.dp ) )
+                                        .background( Color( 0xFFCCCCCC ) )
+                                        .clickable(
+                                            onClick = {
+                                                elemenet.onClick( viewModel )
+                                            }
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ){
+                                    Text("Ver")
+                                }
                             }
+
                         }
 
                     }

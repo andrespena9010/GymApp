@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import com.bochicapp.gym.R
 import com.bochicapp.gym.data.model.*
-import com.bochicapp.gym.data.model.toUser
+import com.bochicapp.gym.data.model.toUserData
 import com.bochicapp.gym.data.repository.Repository.database
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -82,9 +82,45 @@ class DataBase(
     }
 
     suspend fun getUser( id: String ): Usuario {
-        val res = getObject( id ).toString( Charsets.UTF_8 )
+
         return try {
-            res.toUser()
+
+            val userResponse = getObject( id ).toString( Charsets.UTF_8 )
+            var userData = UsuarioData("")
+
+            if ( userResponse.isEmpty() ){
+                userData = UsuarioData( id = "u_1", idfotoperfil = "png_1" )
+                saveUser(
+                    userData.toObj(
+                        tomaDatos = listOf(),
+                        ejecuciones = listOf(),
+                        rutinas = listOf()
+                    )
+                )
+            } else {
+                userData = userResponse.toUserData()
+            }
+
+            val tomaDatosList = mutableListOf<TomaDatosFisicos>()
+            val ejecucionesList = mutableListOf<Ejecucion>()
+            val rutinasList = mutableListOf<Rutina>()
+
+            userData.tomadatosfisicos.forEach { tomaId ->
+                val tomaData = getObject( tomaId ).toString( Charsets.UTF_8 ).toTomaDeDatosData()
+                val objetivosList = mutableListOf<ProximoObjetivo>()
+                tomaData.proximosobjetivos.forEach { objetivoId ->
+                    objetivosList.add( getObject( objetivoId ).toString( Charsets.UTF_8 ).toProximoObjetivoData().toObj() )
+                }
+                tomaDatosList.add( tomaData.toObj( objetivos = objetivosList.toList() ) )
+            }
+
+            //
+
+            userData.toObj(
+                tomaDatos = tomaDatosList.toList(),
+                ejecuciones = ejecucionesList.toList(),
+                rutinas = rutinasList.toList()
+            )
         } catch ( e: Exception ){
             val sw = StringWriter()
             e.printStackTrace( PrintWriter( sw ) )
@@ -97,28 +133,15 @@ class DataBase(
     suspend fun saveUser( user: Usuario ): Boolean {
         var res = false
         try {
-            saveObject( user.id, user.toJson().toByteArray() )
+            saveObject( user.id, user.toUserData().toJson().toByteArray() )
             res = true
         } catch ( e: Exception ){
             val sw = StringWriter()
             e.printStackTrace( PrintWriter( sw ) )
             // Pendiente usar los sw para documentos de log con los valores correspondientes.
-            Log.e("DataBase.saveObject() -> ", e.message.toString() )
+            Log.e("DataBase.saveUser() -> ", e.message.toString() )
         }
         return res
-    }
-
-    suspend fun getTomaDatos( id: String ): TomaDatosFisicos? {
-        val res = getObject( id ).toString( Charsets.UTF_8 )
-        return try {
-            res.toTomaDeDatos()
-        } catch ( e: Exception ){
-            val sw = StringWriter()
-            e.printStackTrace( PrintWriter( sw ) )
-            // Pendiente usar los sw para documentos de log con los valores correspondientes.
-            Log.e("DataBase.getUser() -> ", e.message.toString() )
-            null
-        }
     }
 
     suspend fun getPng(id: String ): ImageBitmap {
@@ -126,8 +149,6 @@ class DataBase(
         return BitmapFactory.decodeByteArray( bytes, 0, bytes.size ).asImageBitmap()
     }
 
-    /*suspend fun getRutina( id: String ): Rutina {
-        return getObject( id ).toRutina()
-    }*/
+
 
 }
