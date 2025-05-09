@@ -38,8 +38,9 @@ import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bochicapp.gym.data.model.Dat
-import com.bochicapp.gym.data.model.UsuarioData
+import com.bochicapp.gym.data.model.Usuario
 import com.bochicapp.gym.data.model.comparaObjetos
+import com.bochicapp.gym.data.model.getUsuario
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
@@ -115,7 +116,7 @@ fun InfoUsuario(
                     .background( Color( 0xFF5555CC ) )
                     .clickable(
                         onClick = {
-                            viewModel.update( userData, UsuarioData::class )
+                            viewModel.update( getUsuario( userData ), Usuario::class )
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -134,7 +135,7 @@ fun InfoUsuario(
 
                 when ( elemenet.type ){
 
-                    Dat.Png -> { // TODO: Seleccionar y copiar foto de perfil
+                    Dat.Png -> {
 
                         var image by remember { mutableStateOf( createBitmap(100, 100).asImageBitmap() ) }
                         viewModel.getPng(
@@ -181,7 +182,7 @@ fun InfoUsuario(
 
                     }
 
-                    Dat.Ls -> {
+                    Dat.Lnk -> {
 
                         if ( !edit ){
 

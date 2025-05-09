@@ -28,6 +28,7 @@ fun Gym() {
 
     val viewModel = GymViewModel
     val selectedView by viewModel.selectedView.collectAsStateWithLifecycle()
+    val lastId by viewModel.lastId.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackBarState = SnackbarHostState()
     val transTime = 500
@@ -79,7 +80,8 @@ fun Gym() {
                     )
 
                 view.Content(
-                    modifier = mod
+                    modifier = mod,
+                    lastId = lastId
                 )
 
             }

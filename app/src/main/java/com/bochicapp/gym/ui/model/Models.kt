@@ -20,7 +20,8 @@ interface GymView {
 
     @Composable
     fun Content(
-        modifier: Modifier
+        modifier: Modifier,
+        lastId: String = ""
     )
 
 }
@@ -39,7 +40,8 @@ sealed class Views {
         )
         @Composable
         override fun Content(
-            modifier: Modifier
+            modifier: Modifier,
+            lastId: String
         ) {
 
             modifier
@@ -66,7 +68,8 @@ sealed class Views {
 
         @Composable
         override fun Content(
-            modifier: Modifier
+            modifier: Modifier,
+            lastId: String
         ) {
 
             modifier
@@ -93,7 +96,8 @@ sealed class Views {
 
         @Composable
         override fun Content(
-            modifier: Modifier
+            modifier: Modifier,
+            lastId: String
         ) {
 
             modifier
@@ -120,7 +124,8 @@ sealed class Views {
 
         @Composable
         override fun Content(
-            modifier: Modifier
+            modifier: Modifier,
+            lastId: String
         ) {
 
             modifier
@@ -128,7 +133,8 @@ sealed class Views {
                 .background( MaterialTheme.colorScheme.background )
 
             TomaDatos(
-                modifier = modifier
+                modifier = modifier,
+                lastId = lastId
             )
         }
 

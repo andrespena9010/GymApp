@@ -1,10 +1,12 @@
 package com.bochicapp.gym.ui.custom
 
+import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,20 +38,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bochicapp.gym.data.model.Dat
-import com.bochicapp.gym.data.model.DataElement
-import com.bochicapp.gym.data.model.ProximoObjetivo
-import com.bochicapp.gym.data.model.TomaDatosFisicos
-import com.bochicapp.gym.data.model.allComplete
-import com.bochicapp.gym.data.model.comparaObjetos
+import com.bochicapp.gym.data.model.*
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun TomaDatos (
     viewModel: GymViewModelClass = GymViewModel,
-    modifier: Modifier
+    modifier: Modifier,
+    lastId: String
 ) {
 
     val usuario by viewModel.usuario.collectAsStateWithLifecycle()
@@ -60,24 +61,31 @@ fun TomaDatos (
     val tomas by rememberSaveable { mutableStateOf( tomasList.toList() ) }
 
     var editToma by rememberSaveable { mutableStateOf( false ) }
-    var editObjetivo by rememberSaveable { mutableStateOf( false ) }
+    var editObjetivo by rememberSaveable { mutableStateOf( false ) }  // TODO: !!!!!!!!!!!!!!!! crear views para cada cosa en un view solo puede haber mostrar y editar,
     val fondo by animateColorAsState(
         targetValue = if (editToma) Color( 0x55000000 ) else Color( 0xCCFFFFFF ),
         animationSpec = tween(durationMillis = 1000)
     )
     var tomaToAdd by rememberSaveable { mutableStateOf( TomaDatosFisicos().toDataList() ) }
-    var objetivoToAdd by rememberSaveable { mutableStateOf( ProximoObjetivo().toDataList() ) }
-    var labelColor = if ( editToma ) Color.White else Color.Black
-
-    var saveToma by rememberSaveable { mutableStateOf( false ) }
-    var saveObjetivo by rememberSaveable { mutableStateOf( false ) }
-
-    LaunchedEffect( usuario, editToma ) {
-        saveToma = allComplete( tomaToAdd )
+    var objetivoToAdd by rememberSaveable {
+        mutableStateOf(
+            LazyElements( dataElements = ProximoObjetivo().toDataList() ).apply {
+                this.addElement(
+                    DataElement(
+                        value = mutableStateOf(""),
+                        type = Dat.Compose
+                    )
+                )
+            }.lazyElements
+        )
     }
 
-    LaunchedEffect( usuario, editObjetivo ) {
-        saveObjetivo = allComplete( objetivoToAdd )
+    var labelColor = if ( editToma ) Color.White else Color.Black
+
+    var saveToma by rememberSaveable { mutableStateOf<DataElement<Any>?>( null ) }
+
+    LaunchedEffect( usuario, editToma ) {
+        saveToma = firstEmpty( tomaToAdd )
     }
 
     BackHandler {
@@ -92,16 +100,16 @@ fun TomaDatos (
 
         Box(
             modifier = Modifier
-                .zIndex( 1f )
-                .padding( 15.dp )
-                .align( Alignment.TopEnd )
-                .size( 50.dp )
+                .zIndex(1f)
+                .padding(15.dp)
+                .align(Alignment.TopEnd)
+                .size(50.dp)
                 .shadow(
                     elevation = 5.dp,
-                    shape = RoundedCornerShape( 20.dp )
+                    shape = RoundedCornerShape(20.dp)
                 )
-                .clip( RoundedCornerShape( 20.dp ) )
-                .background( Color( 0xFFCCCCCC ) )
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color(0xFFCCCCCC))
                 .clickable(
                     onClick = {
                         editToma = !editToma
@@ -225,9 +233,8 @@ fun TomaDatos (
 
                 LazyColumn (
                     modifier = Modifier
-                        .padding( 15.dp )
-                        .fillMaxHeight(0.8f)
-                        .fillMaxWidth(0.8f),
+                        .padding(10.dp)
+                        .fillMaxHeight(0.8f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ){
                     items ( objetivoToAdd ){ objetivo ->
@@ -250,8 +257,8 @@ fun TomaDatos (
                                         modifier = Modifier
                                             .padding(5.dp)
                                             .fillMaxWidth()
-                                            .clip( RoundedCornerShape( 5.dp ) )
-                                            .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                            .clip(RoundedCornerShape(5.dp))
+                                            .background(if (editToma) Color(0xCCFFFFFF) else Color.Transparent),
                                         value = objetivo.value.value.toString(),
                                         onValueChange = { objetivo.value.value = it },
                                         enabled = editToma
@@ -276,8 +283,8 @@ fun TomaDatos (
                                         modifier = Modifier
                                             .padding(5.dp)
                                             .fillMaxWidth()
-                                            .clip( RoundedCornerShape( 5.dp ) )
-                                            .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                            .clip(RoundedCornerShape(5.dp))
+                                            .background(if (editToma) Color(0xCCFFFFFF) else Color.Transparent),
                                         value = objetivo.value.value.toString(),
                                         onValueChange = {
                                             objetivo.value.value = if ( Regex("^$|^\\d+|\\d+\\.|\\d+\\.\\d+$").matches( it ) ) it else "0"
@@ -289,26 +296,82 @@ fun TomaDatos (
 
                             }
 
+                            Dat.Compose -> {
+
+                                Row(
+                                    modifier = Modifier
+                                        .padding(10.dp)
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ){
+                                    // agregar botones de crear objetivo y cancelar. con advertencia de que ningun dato puede estar vacio.
+                                    Box(
+                                        modifier = Modifier
+                                            .shadow(
+                                                elevation = 5.dp,
+                                                shape = RoundedCornerShape( 20.dp )
+                                            )
+                                            .clip( RoundedCornerShape( 20.dp ) )
+                                            .background( Color( 0xFFCCCCCC ) )
+                                            .clickable(
+                                                onClick = {
+                                                    editObjetivo = false
+                                                }
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ){
+                                        Text(
+                                            modifier = Modifier
+                                                .padding(10.dp),
+                                            text = "Cancelar"
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .shadow(
+                                                elevation = 5.dp,
+                                                shape = RoundedCornerShape( 20.dp )
+                                            )
+                                            .clip( RoundedCornerShape( 20.dp ) )
+                                            .background( Color( 0xFFCCCCCC ) )
+                                            .clickable(
+                                                onClick = {
+                                                    val objetivoPendiente = firstEmpty( objetivoToAdd )
+                                                    if ( objetivoPendiente == null ){
+                                                        val objToAdd = getProximoObjetivo( objetivoToAdd )
+                                                        objToAdd.fechacreacion = LocalDateTime.now().format( DateTimeFormatter.ISO_DATE_TIME )
+                                                        viewModel.update( objToAdd, ProximoObjetivo::class )
+                                                    } else {
+                                                        viewModel.sendSnackMessage("El espacio ${ objetivoPendiente.name } no puede estar vacio.")
+                                                    }
+                                                }
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ){
+                                        Text(
+                                            modifier = Modifier
+                                                .padding(10.dp),
+                                            text = "Crear objetivo"
+                                        )
+                                    }
+
+                                }
+
+                            }
+
                         }
 
                     }
-                }
-
-                Row(
-                    modifier = Modifier
-                    ,
-                    verticalAlignment =
-                ){
-                    // agregar botones de crear objetivo y cancelar. con advertencia de que ningun dato puede estar vacio.
                 }
 
             } else {
 
                 LazyColumn (
                     modifier = Modifier
-                        .padding( 15.dp )
-                        .fillMaxHeight(0.8f)
-                        .fillMaxWidth(0.8f),
+                        .padding( 10.dp )
+                        .fillMaxHeight(0.8f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ){
                     items ( tomaToAdd ){ toma ->

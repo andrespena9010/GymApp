@@ -3,10 +3,9 @@ package com.bochicapp.gym.data.repository
 import android.content.Context
 import androidx.compose.ui.graphics.ImageBitmap
 import com.bochicapp.gym.data.local.DataBase
-import com.bochicapp.gym.data.model.ProximoObjetivoData
-import com.bochicapp.gym.data.model.TomaDatosFisicosData
+import com.bochicapp.gym.data.model.ProximoObjetivo
+import com.bochicapp.gym.data.model.TomaDatosFisicos
 import com.bochicapp.gym.data.model.Usuario
-import com.bochicapp.gym.data.model.UsuarioData
 
 object Repository {
 
@@ -20,11 +19,27 @@ object Repository {
     }
 
     suspend fun loadUser(): Usuario {
-        return database.getUser( id = "u_1" )
+        return database.getUser()
     }
 
-    suspend fun saveUser( user: Usuario ): Boolean {
-        return database.saveUser( user )
+    suspend fun updateUser(user: Usuario ): Boolean {
+        return database.updateUser( user )
+    }
+
+    suspend fun loadTomasDeDatosFisicos(): Map<String, TomaDatosFisicos> {
+        return database.loadTomasDeDatos()
+    }
+
+    suspend fun updateTomaDatosFisicos( tomaDatosFisicos: TomaDatosFisicos ): String? {
+        return database.updateTomaDatosFisicos( tomaDatosFisicos )
+    }
+
+    suspend fun loadProximosObjetivos(): Map<String, ProximoObjetivo> {
+        return database.loadProximosObjetivos()
+    }
+
+    suspend fun updateProximoObjetivo( proximoObjetivo: ProximoObjetivo ): String? {
+        return database.updateProximoObjetivo( proximoObjetivo )
     }
 
     suspend fun getPng( id: String ): ImageBitmap {

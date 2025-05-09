@@ -7,22 +7,28 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import com.bochicapp.gym.R
 import com.bochicapp.gym.data.model.*
-import com.bochicapp.gym.data.model.toUserData
-import com.bochicapp.gym.data.repository.Repository.database
+import com.google.gson.Gson
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+
+const val TDF = "TDF"
 
 class DataBase(
     context: Context
 ) {
+
     private val raiz = context.applicationContext.filesDir
     private val dataDirectory = File( raiz, "Data" )
+    private var dataList = listOf<String>()
     private val mutexMap = ConcurrentHashMap<String, Mutex>()
     private val filesToCopy = mutableMapOf<String, ByteArray>()
+    private val userFile = File( dataDirectory, "6d8a8e8e-3b4a-4c5f-9c3d-7e6f5d4c3b2a" )
+    private var userId = ""
 
     init {
         if ( !dataDirectory.exists() ){
@@ -32,7 +38,17 @@ class DataBase(
                 Log.e("Database.init.userDirectory", "Exception: $e")
             }
         }
+        dataDirectory.list()?.let { array ->
+            dataList = array.toList()
+        }
         filesToCopy.put( "png_1", context.resources.openRawResource( R.raw.png_1 ).readBytes() )
+        if ( userFile.exists() ){
+            userId = Gson().fromJson( userFile.readBytes().toString( Charsets.UTF_8 ), String::class.java )
+        } else {
+            val id = UUID.randomUUID().toString()
+            userFile.writeBytes( Gson().toJson( id ).toByteArray() )
+            userId = id
+        }
     }
     private fun getMutex( id: String ): Mutex {
         return mutexMap.getOrPut( id ) { Mutex() }
@@ -44,7 +60,7 @@ class DataBase(
 
     suspend fun copyFiles(){
         filesToCopy.forEach { file ->
-            saveObject( file.key, file.value )
+            updateObject( file.key, file.value )
         }
     }
 
@@ -64,7 +80,7 @@ class DataBase(
         return response
     }
 
-    private suspend fun saveObject( id: String, bytes: ByteArray ): Boolean {
+    private suspend fun updateObject( id: String, bytes: ByteArray ): Boolean {
         var res = false
         getMutex( id ).withLock {
             try {
@@ -74,53 +90,28 @@ class DataBase(
                 val sw = StringWriter()
                 e.printStackTrace( PrintWriter( sw ) )
                 // Pendiente usar los sw para documentos de log con los valores correspondientes.
-                Log.e("DataBase.saveObject() -> ", e.message.toString() )
+                Log.e("DataBase.updateObject() -> ", e.message.toString() )
             }
         }
         remMutex( id )
         return res
     }
 
-    suspend fun getUser( id: String ): Usuario {
+    suspend fun getUser(): Usuario {
 
         return try {
 
-            val userResponse = getObject( id ).toString( Charsets.UTF_8 )
-            var userData = UsuarioData("")
+            val userResponse = getObject( userId ).toString( Charsets.UTF_8 )
+            var user = Usuario("")
 
             if ( userResponse.isEmpty() ){
-                userData = UsuarioData( id = "u_1", idfotoperfil = "png_1" )
-                saveUser(
-                    userData.toObj(
-                        tomaDatos = listOf(),
-                        ejecuciones = listOf(),
-                        rutinas = listOf()
-                    )
-                )
+                user = Usuario( id = userId, idfotoperfil = "png_1" )
+                updateUser( user )
             } else {
-                userData = userResponse.toUserData()
+                user = userResponse.toUser()
             }
 
-            val tomaDatosList = mutableListOf<TomaDatosFisicos>()
-            val ejecucionesList = mutableListOf<Ejecucion>()
-            val rutinasList = mutableListOf<Rutina>()
-
-            userData.tomadatosfisicos.forEach { tomaId ->
-                val tomaData = getObject( tomaId ).toString( Charsets.UTF_8 ).toTomaDeDatosData()
-                val objetivosList = mutableListOf<ProximoObjetivo>()
-                tomaData.proximosobjetivos.forEach { objetivoId ->
-                    objetivosList.add( getObject( objetivoId ).toString( Charsets.UTF_8 ).toProximoObjetivoData().toObj() )
-                }
-                tomaDatosList.add( tomaData.toObj( objetivos = objetivosList.toList() ) )
-            }
-
-            //
-
-            userData.toObj(
-                tomaDatos = tomaDatosList.toList(),
-                ejecuciones = ejecucionesList.toList(),
-                rutinas = rutinasList.toList()
-            )
+            user
         } catch ( e: Exception ){
             val sw = StringWriter()
             e.printStackTrace( PrintWriter( sw ) )
@@ -130,18 +121,62 @@ class DataBase(
         }
     }
 
-    suspend fun saveUser( user: Usuario ): Boolean {
+    suspend fun updateUser( user: Usuario ): Boolean {
         var res = false
         try {
-            saveObject( user.id, user.toUserData().toJson().toByteArray() )
+            updateObject( user.id, user.toJson().toByteArray() )
             res = true
         } catch ( e: Exception ){
             val sw = StringWriter()
             e.printStackTrace( PrintWriter( sw ) )
             // Pendiente usar los sw para documentos de log con los valores correspondientes.
-            Log.e("DataBase.saveUser() -> ", e.message.toString() )
+            Log.e("DataBase.updateUser() -> ", e.message.toString() )
         }
         return res
+    }
+
+    suspend fun loadTomasDeDatos(): Map<String, TomaDatosFisicos> {
+        val objetivos = mutableMapOf<String, TomaDatosFisicos>()
+        dataList.forEach { name ->
+            if ( name.split( "_" )[0] == TDF ){
+                val toma = getObject( name ) que??
+                if ( toma )
+                objetivos[] =
+            }
+        }
+        return objetivos.toMap()
+    }
+
+    suspend fun updateTomaDatosFisicos( tomaDeDatos: TomaDatosFisicos ): String? { // TODO: cargar todos los id que comienzan con TDF_ por ejemlo
+        try {
+            if ( tomaDeDatos.id.isEmpty() ) tomaDeDatos.id = UUID.randomUUID().toString()
+            updateObject( tomaDeDatos.id ,tomaDeDatos.toTomaDatosFisicosData().toJson().toByteArray() )
+            return tomaDeDatos.id
+        } catch ( e: Exception ){
+            val sw = StringWriter()
+            e.printStackTrace( PrintWriter( sw ) )
+            // Pendiente usar los sw para documentos de log con los valores correspondientes.
+            Log.e("DataBase.updateTomaDatosFisicos() -> ", e.message.toString() )
+        }
+        return null
+    }
+
+    suspend fun loadProximosObjetivos(): Map<String, ProximoObjetivo> {
+        return .loadProximoObjetivo()
+    }
+
+    suspend fun updateProximoObjetivo( proximoObjetivo: ProximoObjetivo ): String? {
+        try {
+            if ( proximoObjetivo.id.isEmpty() ) proximoObjetivo.id = UUID.randomUUID().toString()
+            updateObject( proximoObjetivo.id ,proximoObjetivo.toProximoObjetivoData().toJson().toByteArray() )
+            return proximoObjetivo.id
+        } catch ( e: Exception ){
+            val sw = StringWriter()
+            e.printStackTrace( PrintWriter( sw ) )
+            // Pendiente usar los sw para documentos de log con los valores correspondientes.
+            Log.e("DataBase.updateProximoObjetivo() -> ", e.message.toString() )
+        }
+        return null
     }
 
     suspend fun getPng(id: String ): ImageBitmap {
