@@ -35,6 +35,8 @@ sealed class Dat {
     object Lnk: Type
     object AutoFecha: Type
     object Compose: Type
+    object Obj: Type
+    object Ls: Type
 }
 
 data class LazyElements(
@@ -70,7 +72,10 @@ data class Usuario(
     var telefonoUsuario: String = "",
     var contrasena: String = "",
     var genero: String = "",
-    var idfotoperfil: String = ""
+    var idfotoperfil: String = "",
+    var tomadatosfisicos: String = "",
+    var historial: String = "",
+    var rutinas: String = ""
 ){
 
     fun toJson():String{
@@ -121,26 +126,35 @@ data class Usuario(
             ),
             DataElement(
                 name = "Tomas de datos fisicos",
-                value = mutableStateOf( "" ),
-                type = Dat.Lnk,
+                value = mutableStateOf( tomadatosfisicos ),
+                type = Dat.Ls,
                 onClick = { vm ->
-                    vm.goTo( Views.TomaDatosV, id )
+                    vm.goTo(
+                        view = Views.TomaDatosFisicosView,
+                        idToAdd = tomadatosfisicos
+                    )
                 }
             ),
             DataElement(
                 name = "Historial",
-                value = mutableStateOf( "" ),
-                type = Dat.Lnk,
+                value = mutableStateOf( historial ),
+                type = Dat.Ls,
                 onClick = { vm ->
-                    vm.goTo( Views.TomaDatosV, id )
+                    vm.goTo(
+                        view = Views.TomaDatosFisicosView,
+                        idToAdd = historial
+                    )
                 }
             ),
             DataElement(
                 name = "Rutinas",
-                value = mutableStateOf( "" ),
-                type = Dat.Lnk,
+                value = mutableStateOf( rutinas ),
+                type = Dat.Ls,
                 onClick = { vm ->
-                    vm.goTo( Views.TomaDatosV, id )
+                    vm.goTo(
+                        view = Views.TomaDatosFisicosView,
+                        idToAdd = rutinas
+                    )
                 }
             )
         )
@@ -151,20 +165,22 @@ data class Usuario(
 @Suppress("UNCHECKED_CAST")
 fun getUsuario( info: List<DataElement<Any>> ): Usuario {
     return Usuario(
-        id = info.find { it.name == "Id" }?.value?.value as String,
-        idfotoperfil = info.find { it.name == "Foto de perfil" }?.value?.value as String,
-        nombreusuario = info.find { it.name == "Nombre" }?.value?.value as String,
-        apellidos = info.find { it.name == "Apellidos" }?.value?.value as String,
-        correo = info.find { it.name == "Correo electronico" }?.value?.value as String,
-        telefonoUsuario = info.find { it.name == "Numero de telefono" }?.value?.value as String,
-        contrasena = info.find { it.name == "Contraseña" }?.value?.value as String,
-        genero = info.find { it.name == "Genero" }?.value?.value as String
+        id = info.find { it.name == "Id" }?.value?.value.toString(),
+        idfotoperfil = info.find { it.name == "Foto de perfil" }?.value?.value.toString(),
+        nombreusuario = info.find { it.name == "Nombre" }?.value?.value.toString(),
+        apellidos = info.find { it.name == "Apellidos" }?.value?.value.toString(),
+        correo = info.find { it.name == "Correo electronico" }?.value?.value.toString(),
+        telefonoUsuario = info.find { it.name == "Numero de telefono" }?.value?.value.toString(),
+        contrasena = info.find { it.name == "Contraseña" }?.value?.value.toString(),
+        genero = info.find { it.name == "Genero" }?.value?.value.toString(),
+        tomadatosfisicos = info.find { it.name == "Tomas de datos fisicos" }?.value?.value.toString(),
+        historial = info.find { it.name == "Historial" }?.value?.value.toString(),
+        rutinas = info.find { it.name == "Rutinas" }?.value?.value.toString()
     )
 }
 
 data class TomaDatosFisicos(
     var id: String = "",
-    var idusuario: String = "",
     var fechatoma: String = "",
     var altura: Double = 0.0,
     var condicionesmedicas: String = "",
@@ -172,7 +188,8 @@ data class TomaDatosFisicos(
     var imc: Double = 0.0,
     var indicegrasacorporal: Double = 0.0,
     var peso: Double = 0.0,
-    var idrutinaenejecucion: String = ""
+    var idrutinaenejecucion: String = "",
+    var proximosobjetivos: String = ""
 ){
 
     fun toJson():String{
@@ -183,11 +200,6 @@ data class TomaDatosFisicos(
         return listOf(
             DataElement(
                 name = "Id",
-                value = mutableStateOf( id ),
-                type = Dat.Id
-            ),
-            DataElement(
-                name = "Id usuario",
                 value = mutableStateOf( id ),
                 type = Dat.Id
             ),
@@ -235,14 +247,12 @@ data class TomaDatosFisicos(
             DataElement(
                 name = "Rutina relacionada con la toma",
                 value = mutableStateOf( idrutinaenejecucion ),
-                type = Dat.Lnk,
-                validate = true
+                type = Dat.Obj
             ),
             DataElement(
                 name = "Objetivos planteados",
                 value = mutableStateOf( "" ),
-                type = Dat.Lnk,
-                validate = true
+                type = Dat.Ls
             )
         )
     }
@@ -252,22 +262,21 @@ data class TomaDatosFisicos(
 @Suppress("UNCHECKED_CAST")
 fun getTomaDatosFisicos( info: List<DataElement<Any>> ): TomaDatosFisicos {
     return TomaDatosFisicos(
-        id = info.find { it.name == "Id" }?.value?.value as String,
-        idusuario = info.find { it.name == "Id usuario" }?.value?.value as String,
-        fechatoma = info.find { it.name == "Fecha de la toma" }?.value?.value as String,
-        altura = info.find { it.name == "Altura" }?.value?.value as Double,
-        condicionesmedicas = info.find { it.name == "Condiciones medicas" }?.value?.value as String,
-        alergias = info.find { it.name == "Alergias" }?.value?.value as String,
-        imc = info.find { it.name == "Indice de Masa Corporal" }?.value?.value as Double,
-        indicegrasacorporal = info.find { it.name == "Indice de Grasa Corporal" }?.value?.value as Double,
-        peso = info.find { it.name == "Peso" }?.value?.value as Double,
-        idrutinaenejecucion = info.find { it.name == "Rutina relacionada con la toma" }?.value?.value as String
+        id = info.find { it.name == "Id" }?.value?.value.toString(),
+        fechatoma = info.find { it.name == "Fecha de la toma" }?.value?.value.toString(),
+        altura = info.find { it.name == "Altura" }?.value?.value.toString().toDouble(),
+        condicionesmedicas = info.find { it.name == "Condiciones medicas" }?.value?.value.toString(),
+        alergias = info.find { it.name == "Alergias" }?.value?.value.toString(),
+        imc = info.find { it.name == "Indice de Masa Corporal" }?.value?.value.toString().toDouble(),
+        indicegrasacorporal = info.find { it.name == "Indice de Grasa Corporal" }?.value?.value.toString().toDouble(),
+        peso = info.find { it.name == "Peso" }?.value?.value.toString().toDouble(),
+        idrutinaenejecucion = info.find { it.name == "Rutina relacionada con la toma" }?.value?.value.toString(),
+        proximosobjetivos = info.find { it.name == "Objetivos planteados" }?.value?.value.toString()
     )
 }
 
 data class ProximoObjetivo(
     var id: String = "",
-    var idTomaDeDatos: String = "",
     var descripcionobjetivo: String = "",
     var unidaddemedida: String = "",
     var cantidadmedidaactual: Double = 0.0,
@@ -275,10 +284,6 @@ data class ProximoObjetivo(
     var fechacreacion: String = "",
     var fechacumplimiento: String = "",
 ){
-
-    fun extension(): String {
-        return "POB"
-    }
 
     fun toJson():String{
         return Gson().toJson(this)
@@ -288,11 +293,6 @@ data class ProximoObjetivo(
         return listOf(
             DataElement(
                 name = "Id",
-                value = mutableStateOf( id ),
-                type = Dat.Id
-            ),
-            DataElement(
-                name = "Id toma de datos",
                 value = mutableStateOf( id ),
                 type = Dat.Id
             ),
@@ -337,14 +337,13 @@ data class ProximoObjetivo(
 
 fun getProximoObjetivo( info: List<DataElement<Any>> ): ProximoObjetivo {
     return ProximoObjetivo(
-        id = info.find { it.name == "Id" }?.value?.value as String,
-        idTomaDeDatos = info.find { it.name == "Id toma de datos" }?.value?.value as String,
-        descripcionobjetivo = info.find { it.name == "Descripcion del objetivo" }?.value?.value as String,
-        unidaddemedida = info.find { it.name == "Unidad de medida del objetivo" }?.value?.value as String,
-        cantidadmedidaactual = info.find { it.name == "Medida actual" }?.value?.value as Double,
-        cantidadmedidadeseada = info.find { it.name == "Medida deseada" }?.value?.value as Double,
-        fechacreacion = info.find { it.name == "Fecha de creacion" }?.value?.value as String,
-        fechacumplimiento = info.find { it.name == "Fecha de cumplimiento" }?.value?.value as String
+        id = info.find { it.name == "Id" }?.value?.value.toString(),
+        descripcionobjetivo = info.find { it.name == "Descripcion del objetivo" }?.value?.value.toString(),
+        unidaddemedida = info.find { it.name == "Unidad de medida del objetivo" }?.value?.value.toString(),
+        cantidadmedidaactual = info.find { it.name == "Medida actual" }?.value?.value.toString().toDouble(),
+        cantidadmedidadeseada = info.find { it.name == "Medida deseada" }?.value?.value.toString().toDouble(),
+        fechacreacion = info.find { it.name == "Fecha de creacion" }?.value?.value.toString(),
+        fechacumplimiento = info.find { it.name == "Fecha de cumplimiento" }?.value?.value.toString()
     )
 }
 

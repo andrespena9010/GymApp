@@ -10,12 +10,12 @@ import com.bochicapp.gym.data.repository.Repository
 import com.bochicapp.gym.ui.model.GymView
 import com.bochicapp.gym.ui.model.Views
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.reflect.KClass
 
 open class GymViewModelClass (): ViewModel() {
 
@@ -27,24 +27,19 @@ open class GymViewModelClass (): ViewModel() {
     private val _selectedView = MutableStateFlow<GymView>( Views.PrincipalV )
     val selectedView: StateFlow<GymView> = _selectedView.asStateFlow()
 
-    private val _lastId = MutableStateFlow( "" )
-    val lastId: StateFlow<String> = _lastId.asStateFlow()
+    private val _navIds = MutableStateFlow( listOf<String>() )
+    val navIds: StateFlow<List<String>> = _navIds.asStateFlow()
 
-    private val _usuario = MutableStateFlow( Usuario( "" ) ) // Para podificar el usuario la respuesta de el guardado debe ser true, sino no se modifican los cambios de la interfaz
+    private val _usuario = MutableStateFlow( Usuario( "" ) )
     val usuario: StateFlow<Usuario> = _usuario.asStateFlow()
 
-    private val _tomasDeDatos = MutableStateFlow( mapOf<String, TomaDatosFisicos>() )
-    val tomasDeDatos: StateFlow<Map<String, TomaDatosFisicos>> = _tomasDeDatos.asStateFlow()
-
-    private val _objetivos = MutableStateFlow( mapOf<String, ProximoObjetivo>() )
-    val objetivos: StateFlow<Map<String, ProximoObjetivo>> = _objetivos.asStateFlow()
+    /*private val _lastUpdates = MutableStateFlow( listOf<String>() )
+    val lastUpdates: StateFlow<List<String>> = _lastUpdates.asStateFlow()*/
 
     fun load( context: Context ){
-        viewModelScope.launch {
+        viewModelScope.launch ( Dispatchers.IO ){
             repository.init( context = context )
             _usuario.update { repository.loadUser() }
-            _tomasDeDatos.update { repository.loadTomasDeDatosFisicos() }
-            _objetivos.update { repository.loadProximosObjetivos() }
         }
     }
 
@@ -59,69 +54,70 @@ open class GymViewModelClass (): ViewModel() {
         }
     }
 
-    fun goTo( view: GymView, objectId: String = "" ){
-        _lastId.update { objectId }
+    fun goTo(view: GymView, idToAdd: String? = null, idToRemove: String? = null ){
+        _navIds.update { current ->
+            val new = current.toMutableList()
+            idToAdd?.let { new.add( idToAdd ) }
+            idToRemove?.let { new.remove( idToRemove ) }
+            new.toList()
+        }
         _selectedView.update { view }
     }
 
-    fun update(obj: Any, type: KClass<*> ){ // TODO: !!!!!! agregar seguimiento a los cambios realizados en general
-
-        when ( type ){
-
-            Usuario::class -> {
-                viewModelScope.launch {
-                    var newUser = obj as Usuario
-                    if ( repository.updateUser( newUser ) ){
-                        _usuario.update { newUser }
-                        sendSnackMessage( "Usuario actualizado" )
-                    } else {
-                        sendSnackMessage( "Error al actualizar el usuario." )
-                    }
-                }
+    fun updateUser( user: Usuario ){
+        viewModelScope.launch ( Dispatchers.IO ){
+            if ( repository.updateUser( user ) ){
+                _usuario.update { user }
+                sendSnackMessage( "Usuario actualizado" )
+            } else {
+                sendSnackMessage( "Error al actualizar el usuario." )
             }
-
-            TomaDatosFisicos::class -> {
-                viewModelScope.launch {
-                    var newToma = obj as TomaDatosFisicos
-                    val tomaId = repository.updateTomaDatosFisicos( newToma )
-                    if ( tomaId != null ){
-                        newToma.id = tomaId
-                        _tomasDeDatos.update { tomasDatos ->
-                            tomasDatos.toMutableMap().apply {
-                                this[ newToma.id ] = newToma
-                            }.toMap()
-                        }
-                        sendSnackMessage( "Toma de datos agregada." )
-                    } else {
-                        sendSnackMessage( "Error al crear la toma de datos." )
-                    }
-                }
-            }
-
-            ProximoObjetivo::class ->{
-                viewModelScope.launch {
-                    var newObjetivo = obj as ProximoObjetivo
-                    val objetivoId = repository.updateProximoObjetivo( newObjetivo )
-                    if ( objetivoId != null ){
-                        newObjetivo.id = objetivoId
-                        _objetivos.update {  objetivos ->
-                            objetivos.toMutableMap().apply {
-                                this[ newObjetivo.id ] = newObjetivo
-                            }.toMap()
-                        }
-                        sendSnackMessage( "Toma de datos agregada." )
-                    } else {
-                        sendSnackMessage( "Error al crear la toma de datos." )
-                    }
-                }
-            }
-
         }
+    }
 
+    fun getTomasDeDatos( id: String, onLoad: ( List<TomaDatosFisicos> ) -> Unit ) {
+        viewModelScope.launch ( Dispatchers.IO ){
+            onLoad( repository.loadTomasDeDatosFisicos( id ) )
+        }
+    }
+
+    fun updateTomaDatosFisicos( toma: TomaDatosFisicos, idList: String, onUpdate: ( TomaDatosFisicos ) -> Unit ){
+        viewModelScope.launch ( Dispatchers.IO ){
+            val tomaId = repository.updateTomaDatosFisicos(
+                tomaDatosFisicos = toma,
+                idList = idList
+            )
+            if ( tomaId != null ){
+                toma.id = tomaId
+                sendSnackMessage( "Toma de datos actualizada." )
+                onUpdate( toma )
+            } else {
+                sendSnackMessage( "Error al crear la toma de datos." )
+            }
+        }
+    }
+
+    fun getProximosObjetivos( id: String, onLoad: ( List<ProximoObjetivo> ) -> Unit ) {
+        viewModelScope.launch ( Dispatchers.IO ){
+            onLoad( repository.loadProximosObjetivos( id ) )
+        }
+    }
+
+    fun updateProximoObjetivo( objetivo: ProximoObjetivo, onUpdate: ( ProximoObjetivo ) -> Unit ){
+        viewModelScope.launch ( Dispatchers.IO ){
+            val objetivoId = repository.updateProximoObjetivo( objetivo )
+            if ( objetivoId != null ){
+                objetivo.id = objetivoId
+                sendSnackMessage( "Toma de datos agregada." )
+                onUpdate( objetivo )
+            } else {
+                sendSnackMessage( "Error al crear la toma de datos." )
+            }
+        }
     }
 
     fun getPng( id: String , onLoad: ( ImageBitmap ) -> Unit ) {
-        viewModelScope.launch {
+        viewModelScope.launch ( Dispatchers.IO ){
              onLoad( repository.getPng( id = id ) )
         }
     }

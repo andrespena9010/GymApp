@@ -38,7 +38,6 @@ import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bochicapp.gym.data.model.Dat
-import com.bochicapp.gym.data.model.Usuario
 import com.bochicapp.gym.data.model.comparaObjetos
 import com.bochicapp.gym.data.model.getUsuario
 import com.bochicapp.gym.ui.model.Views
@@ -46,7 +45,7 @@ import com.bochicapp.gym.ui.viewmodel.GymViewModel
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
 
 @Composable
-fun InfoUsuario(
+fun UsuarioCompose(
     viewModel: GymViewModelClass = GymViewModel,
     modifier: Modifier
 ) {
@@ -106,8 +105,6 @@ fun InfoUsuario(
                     .zIndex( 2f )
                     .padding( 10.dp )
                     .align( Alignment.BottomCenter )
-                    .width( 200.dp )
-                    .height( 40.dp )
                     .shadow(
                         elevation = 5.dp,
                         shape = RoundedCornerShape( 20.dp )
@@ -116,12 +113,16 @@ fun InfoUsuario(
                     .background( Color( 0xFF5555CC ) )
                     .clickable(
                         onClick = {
-                            viewModel.update( getUsuario( userData ), Usuario::class )
+                            viewModel.updateUser( getUsuario( userData ) )
                         }
                     ),
                 contentAlignment = Alignment.Center
             ){
-                Text("Guardar Cambios")
+                Text(
+                    modifier = Modifier
+                        .padding( 10.dp ),
+                    text = "Guardar Cambios"
+                )
             }
         }
 
@@ -182,7 +183,7 @@ fun InfoUsuario(
 
                     }
 
-                    Dat.Lnk -> {
+                    Dat.Ls -> {
 
                         if ( !edit ){
 
@@ -200,8 +201,6 @@ fun InfoUsuario(
                                     modifier = Modifier
                                         .padding( 10.dp )
                                         .align( Alignment.CenterHorizontally )
-                                        .width( 100.dp )
-                                        .height( 40.dp )
                                         .shadow(
                                             elevation = 5.dp,
                                             shape = RoundedCornerShape( 20.dp )
@@ -215,7 +214,11 @@ fun InfoUsuario(
                                         ),
                                     contentAlignment = Alignment.Center
                                 ){
-                                    Text("Ver")
+                                    Text(
+                                        modifier = Modifier
+                                            .padding( 10.dp ),
+                                        text = "Ver"
+                                    )
                                 }
                             }
 

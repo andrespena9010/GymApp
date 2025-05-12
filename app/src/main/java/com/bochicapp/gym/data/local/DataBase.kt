@@ -13,6 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -105,7 +106,14 @@ class DataBase(
             var user = Usuario("")
 
             if ( userResponse.isEmpty() ){
-                user = Usuario( id = userId, idfotoperfil = "png_1" )
+                val tomaDeDatosId = UUID.randomUUID().toString()
+                val historialId = UUID.randomUUID().toString()
+                val rutinasId = UUID.randomUUID().toString()
+                user.id = userId
+                user.idfotoperfil = "png_1"
+                if ( updateObject( tomaDeDatosId, "[]".toByteArray() ) ) user.tomadatosfisicos = tomaDeDatosId
+                if ( updateObject( historialId, "[]".toByteArray() ) ) user.historial = historialId
+                if ( updateObject( rutinasId, "[]".toByteArray() ) ) user.rutinas = rutinasId
                 updateUser( user )
             } else {
                 user = userResponse.toUser()
@@ -135,22 +143,39 @@ class DataBase(
         return res
     }
 
-    suspend fun loadTomasDeDatos(): Map<String, TomaDatosFisicos> {
-        val objetivos = mutableMapOf<String, TomaDatosFisicos>()
-        dataList.forEach { name ->
-            if ( name.split( "_" )[0] == TDF ){
-                val toma = getObject( name ) que??
-                if ( toma )
-                objetivos[] =
+    suspend fun loadTomasDeDatos( id: String ): List<TomaDatosFisicos> {
+        val tomaDeDatos = mutableListOf<TomaDatosFisicos>()
+        if ( id.isNotEmpty() ){
+            val ids = getObject( id ).toString( Charsets.UTF_8 )
+            if ( ids.isNotEmpty() ){
+                try {
+                    ids.toList().forEach { idToma ->
+                        tomaDeDatos.add( getObject( idToma ).toString( Charsets.UTF_8 ).toTomaDeDatos() )
+                    }
+                } catch ( e: Exception ){
+                    val sw = StringWriter()
+                    e.printStackTrace( PrintWriter( sw ) )
+                    // Pendiente usar los sw para documentos de log con los valores correspondientes.
+                    Log.e("DataBase.loadTomasDeDatos() -> ", e.message.toString() )
+                }
             }
         }
-        return objetivos.toMap()
+        return tomaDeDatos.toList()
     }
 
-    suspend fun updateTomaDatosFisicos( tomaDeDatos: TomaDatosFisicos ): String? { // TODO: cargar todos los id que comienzan con TDF_ por ejemlo
+    suspend fun updateTomaDatosFisicos( tomaDeDatos: TomaDatosFisicos, idList: String ): String? {
         try {
             if ( tomaDeDatos.id.isEmpty() ) tomaDeDatos.id = UUID.randomUUID().toString()
-            updateObject( tomaDeDatos.id ,tomaDeDatos.toTomaDatosFisicosData().toJson().toByteArray() )
+            if ( idList.isNotEmpty() ){
+                val res = getObject( idList ).toString( Charsets.UTF_8 )
+                if ( res.isNotEmpty() ){
+                    val list = res.toList().toMutableList()
+                    tomaDeDatos.fechatoma = Instant.now().toString()
+                    updateObject( tomaDeDatos.id ,tomaDeDatos.toJson().toByteArray() )
+                    list.add( tomaDeDatos.id )
+                    updateObject( idList, list.toList().toJson().toByteArray() )
+                }
+            }
             return tomaDeDatos.id
         } catch ( e: Exception ){
             val sw = StringWriter()
@@ -161,14 +186,28 @@ class DataBase(
         return null
     }
 
-    suspend fun loadProximosObjetivos(): Map<String, ProximoObjetivo> {
-        return .loadProximoObjetivo()
+    suspend fun loadProximosObjetivos( id: String ): List<ProximoObjetivo> {
+        val objetivos = mutableListOf<ProximoObjetivo>()
+        val ids = getObject( id ).toString( Charsets.UTF_8 )
+        if ( ids.isNotEmpty() ){
+            try {
+                ids.toList().forEach { idToma ->
+                    objetivos.add( getObject( idToma ).toString( Charsets.UTF_8 ).toProximoObjetivo() )
+                }
+            } catch ( e: Exception ){
+                val sw = StringWriter()
+                e.printStackTrace( PrintWriter( sw ) )
+                // Pendiente usar los sw para documentos de log con los valores correspondientes.
+                Log.e("DataBase.loadProximosObjetivos() -> ", e.message.toString() )
+            }
+        }
+        return objetivos.toList()
     }
 
     suspend fun updateProximoObjetivo( proximoObjetivo: ProximoObjetivo ): String? {
         try {
             if ( proximoObjetivo.id.isEmpty() ) proximoObjetivo.id = UUID.randomUUID().toString()
-            updateObject( proximoObjetivo.id ,proximoObjetivo.toProximoObjetivoData().toJson().toByteArray() )
+            updateObject( proximoObjetivo.id ,proximoObjetivo.toJson().toByteArray() )
             return proximoObjetivo.id
         } catch ( e: Exception ){
             val sw = StringWriter()

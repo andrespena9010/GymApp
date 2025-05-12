@@ -20,8 +20,7 @@ interface GymView {
 
     @Composable
     fun Content(
-        modifier: Modifier,
-        lastId: String = ""
+        modifier: Modifier
     )
 
 }
@@ -40,8 +39,7 @@ sealed class Views {
         )
         @Composable
         override fun Content(
-            modifier: Modifier,
-            lastId: String
+            modifier: Modifier
         ) {
 
             modifier
@@ -68,8 +66,7 @@ sealed class Views {
 
         @Composable
         override fun Content(
-            modifier: Modifier,
-            lastId: String
+            modifier: Modifier
         ) {
 
             modifier
@@ -96,22 +93,21 @@ sealed class Views {
 
         @Composable
         override fun Content(
-            modifier: Modifier,
-            lastId: String
+            modifier: Modifier
         ) {
 
             modifier
                 .fillMaxSize()
                 .background( MaterialTheme.colorScheme.background )
 
-            InfoUsuario(
+            UsuarioCompose(
                 modifier = modifier
             )
         }
 
     }
 
-    object TomaDatosV: GymView {
+    object TomaDatosFisicosView: GymView {
 
         override val modInfo = ModInfo(
             size = DpSize(
@@ -124,17 +120,15 @@ sealed class Views {
 
         @Composable
         override fun Content(
-            modifier: Modifier,
-            lastId: String
+            modifier: Modifier
         ) {
 
             modifier
                 .fillMaxSize()
                 .background( MaterialTheme.colorScheme.background )
 
-            TomaDatos(
-                modifier = modifier,
-                lastId = lastId
+            TomaDatosFisicosCompose(
+                modifier = modifier
             )
         }
 
