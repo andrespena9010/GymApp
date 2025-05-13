@@ -17,7 +17,6 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-const val TDF = "TDF"
 
 class DataBase(
     context: Context
@@ -165,14 +164,23 @@ class DataBase(
 
     suspend fun updateTomaDatosFisicos( tomaDeDatos: TomaDatosFisicos, idList: String ): String? {
         try {
-            if ( tomaDeDatos.id.isEmpty() ) tomaDeDatos.id = UUID.randomUUID().toString()
+            if ( tomaDeDatos.id.isEmpty() ) {
+                tomaDeDatos.id = UUID.randomUUID().toString()
+                val objetivosId = UUID.randomUUID().toString()
+                if ( updateObject( objetivosId, "[]".toByteArray() ) ) tomaDeDatos.proximosobjetivos = objetivosId
+            }
             if ( idList.isNotEmpty() ){
                 val res = getObject( idList ).toString( Charsets.UTF_8 )
                 if ( res.isNotEmpty() ){
                     val list = res.toList().toMutableList()
-                    tomaDeDatos.fechatoma = Instant.now().toString()
+                    tomaDeDatos.fechamodificacion = Instant.now().toString()
                     updateObject( tomaDeDatos.id ,tomaDeDatos.toJson().toByteArray() )
-                    list.add( tomaDeDatos.id )
+                    val i = list.indexOfFirst { it == tomaDeDatos.id }
+                    if ( i != -1 ) {
+                        list[i] = tomaDeDatos.id
+                    } else {
+                        list.add( tomaDeDatos.id )
+                    }
                     updateObject( idList, list.toList().toJson().toByteArray() )
                 }
             }
@@ -204,10 +212,24 @@ class DataBase(
         return objetivos.toList()
     }
 
-    suspend fun updateProximoObjetivo( proximoObjetivo: ProximoObjetivo ): String? {
+    suspend fun updateProximoObjetivo( proximoObjetivo: ProximoObjetivo, idList: String ): String? {
         try {
             if ( proximoObjetivo.id.isEmpty() ) proximoObjetivo.id = UUID.randomUUID().toString()
-            updateObject( proximoObjetivo.id ,proximoObjetivo.toJson().toByteArray() )
+            if ( idList.isNotEmpty() ){
+                val res = getObject( idList ).toString( Charsets.UTF_8 )
+                if ( res.isNotEmpty() ){
+                    val list = res.toList().toMutableList()
+                    proximoObjetivo.fechamodificacion = Instant.now().toString()
+                    updateObject( proximoObjetivo.id ,proximoObjetivo.toJson().toByteArray() )
+                    val i = list.indexOfFirst { it == proximoObjetivo.id }
+                    if ( i != -1 ) {
+                        list[i] = proximoObjetivo.id
+                    } else {
+                        list.add( proximoObjetivo.id )
+                    }
+                    updateObject( idList, list.toList().toJson().toByteArray() )
+                }
+            }
             return proximoObjetivo.id
         } catch ( e: Exception ){
             val sw = StringWriter()
@@ -216,6 +238,26 @@ class DataBase(
             Log.e("DataBase.updateProximoObjetivo() -> ", e.message.toString() )
         }
         return null
+    }
+
+    suspend fun loadRutinas( id: String ): List<Rutina> {
+        val rutinas = mutableListOf<Rutina>()
+        if ( id.isNotEmpty() ){
+            val ids = getObject( id ).toString( Charsets.UTF_8 )
+            if ( ids.isNotEmpty() ){
+                try {
+                    ids.toList().forEach { idRutina ->
+                        rutinas.add( getObject( idRutina ).toString( Charsets.UTF_8 ).toRutina() )
+                    }
+                } catch ( e: Exception ){
+                    val sw = StringWriter()
+                    e.printStackTrace( PrintWriter( sw ) )
+                    // Pendiente usar los sw para documentos de log con los valores correspondientes.
+                    Log.e("DataBase.loadRutinas() -> ", e.message.toString() )
+                }
+            }
+        }
+        return rutinas.toList()
     }
 
     suspend fun getPng(id: String ): ImageBitmap {

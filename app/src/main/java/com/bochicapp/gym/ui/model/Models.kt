@@ -27,7 +27,7 @@ interface GymView {
 
 sealed class Views {
 
-    object PrincipalV: GymView {
+    object PrincipalView: GymView {
 
         override val modInfo = ModInfo(
             size = DpSize(
@@ -53,7 +53,7 @@ sealed class Views {
         }
     }
 
-    object EjecucionV: GymView {
+    object EjecucionView: GymView {
 
         override val modInfo = ModInfo(
             size = DpSize(
@@ -80,7 +80,7 @@ sealed class Views {
 
     }
 
-    object InfoUsuarioV: GymView {
+    object UsuarioView: GymView {
 
         override val modInfo = ModInfo(
             size = DpSize(
@@ -128,6 +128,60 @@ sealed class Views {
                 .background( MaterialTheme.colorScheme.background )
 
             TomaDatosFisicosCompose(
+                modifier = modifier
+            )
+        }
+
+    }
+
+    object ProximosObjetivosView: GymView {
+
+        override val modInfo = ModInfo(
+            size = DpSize(
+                width = 0.dp,
+                height = 0.dp
+            ),
+            useMaxWidth = true,
+            useMaxHeight = true
+        )
+
+        @Composable
+        override fun Content(
+            modifier: Modifier
+        ) {
+
+            modifier
+                .fillMaxSize()
+                .background( MaterialTheme.colorScheme.background )
+
+            ProximosObjetivosCompose(
+                modifier = modifier
+            )
+        }
+
+    }
+
+    object RutinasView: GymView {
+
+        override val modInfo = ModInfo(
+            size = DpSize(
+                width = 0.dp,
+                height = 0.dp
+            ),
+            useMaxWidth = true,
+            useMaxHeight = true
+        )
+
+        @Composable
+        override fun Content(
+            modifier: Modifier
+        ) {
+
+            modifier
+                .fillMaxSize()
+                .background( MaterialTheme.colorScheme.background )
+
+            RutinasCompose(
                 modifier = modifier
             )
         }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.graphics.ImageBitmap
 import com.bochicapp.gym.data.local.DataBase
 import com.bochicapp.gym.data.model.ProximoObjetivo
+import com.bochicapp.gym.data.model.Rutina
 import com.bochicapp.gym.data.model.TomaDatosFisicos
 import com.bochicapp.gym.data.model.Usuario
 
@@ -44,8 +45,18 @@ object Repository {
         return database.loadProximosObjetivos( id = id )
     }
 
-    suspend fun updateProximoObjetivo( proximoObjetivo: ProximoObjetivo ): String? {
-        return database.updateProximoObjetivo( proximoObjetivo = proximoObjetivo )
+    suspend fun updateProximoObjetivo(
+        proximoObjetivo: ProximoObjetivo,
+        idList: String
+    ): String? {
+        return database.updateProximoObjetivo(
+            proximoObjetivo = proximoObjetivo,
+            idList = idList
+        )
+    }
+
+    suspend fun loadRutinas( id: String ): List<Rutina> {
+        return database.loadRutinas( id = id )
     }
 
     suspend fun getPng( id: String ): ImageBitmap {

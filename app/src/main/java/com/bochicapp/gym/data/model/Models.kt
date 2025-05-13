@@ -56,11 +56,19 @@ data class LazyElements(
     }
 }
 
+interface Option
+
+sealed class Options {
+    object GoTo: Option
+    object Select: Option
+    object See: Option
+}
+
 data class DataElement<Any>(
     val name: String = "",
     var value: MutableState<Any>,
     val type: Type = Dat.None,
-    var onClick: (GymViewModelClass) -> Unit = {},
+    var action: ( GymViewModelClass, Option ) -> Unit = {_,_->},
     var validate: Boolean = false
 )
 
@@ -128,10 +136,10 @@ data class Usuario(
                 name = "Tomas de datos fisicos",
                 value = mutableStateOf( tomadatosfisicos ),
                 type = Dat.Ls,
-                onClick = { vm ->
+                action = { vm, opt ->
                     vm.goTo(
                         view = Views.TomaDatosFisicosView,
-                        idToAdd = tomadatosfisicos
+                        id = tomadatosfisicos
                     )
                 }
             ),
@@ -139,10 +147,10 @@ data class Usuario(
                 name = "Historial",
                 value = mutableStateOf( historial ),
                 type = Dat.Ls,
-                onClick = { vm ->
+                action = { vm, opt ->
                     vm.goTo(
                         view = Views.TomaDatosFisicosView,
-                        idToAdd = historial
+                        id = historial
                     )
                 }
             ),
@@ -150,10 +158,10 @@ data class Usuario(
                 name = "Rutinas",
                 value = mutableStateOf( rutinas ),
                 type = Dat.Ls,
-                onClick = { vm ->
+                action = { vm, opt ->
                     vm.goTo(
                         view = Views.TomaDatosFisicosView,
-                        idToAdd = rutinas
+                        id = rutinas
                     )
                 }
             )
@@ -181,7 +189,7 @@ fun getUsuario( info: List<DataElement<Any>> ): Usuario {
 
 data class TomaDatosFisicos(
     var id: String = "",
-    var fechatoma: String = "",
+    var fechamodificacion: String = "",
     var altura: Double = 0.0,
     var condicionesmedicas: String = "",
     var alergias: String = "",
@@ -204,8 +212,8 @@ data class TomaDatosFisicos(
                 type = Dat.Id
             ),
             DataElement(
-                name = "Fecha de la toma",
-                value = mutableStateOf( fechatoma ),
+                name = "Ultima Modificacion",
+                value = mutableStateOf( fechamodificacion ),
                 type = Dat.AutoFecha
             ),
             DataElement(
@@ -247,12 +255,32 @@ data class TomaDatosFisicos(
             DataElement(
                 name = "Rutina relacionada con la toma",
                 value = mutableStateOf( idrutinaenejecucion ),
-                type = Dat.Obj
+                type = Dat.Obj,
+                action = { vm, opt ->
+                    when ( opt ){
+                        Options.Select ->{
+                            vm.goTo(
+                                view = Views.RutinasView,
+                                id = idrutinaenejecucion,
+                                select = true
+                            )
+                        }
+                        Options.See -> {
+                            // TODO: pendiente
+                        }
+                    }
+                }
             ),
             DataElement(
                 name = "Objetivos planteados",
-                value = mutableStateOf( "" ),
-                type = Dat.Ls
+                value = mutableStateOf( proximosobjetivos ),
+                type = Dat.Ls,
+                action = { vm, opt ->
+                    vm.goTo(
+                        view = Views.ProximosObjetivosView,
+                        id = proximosobjetivos
+                    )
+                }
             )
         )
     }
@@ -263,7 +291,7 @@ data class TomaDatosFisicos(
 fun getTomaDatosFisicos( info: List<DataElement<Any>> ): TomaDatosFisicos {
     return TomaDatosFisicos(
         id = info.find { it.name == "Id" }?.value?.value.toString(),
-        fechatoma = info.find { it.name == "Fecha de la toma" }?.value?.value.toString(),
+        fechamodificacion = info.find { it.name == "Ultima Modificacion" }?.value?.value.toString(),
         altura = info.find { it.name == "Altura" }?.value?.value.toString().toDouble(),
         condicionesmedicas = info.find { it.name == "Condiciones medicas" }?.value?.value.toString(),
         alergias = info.find { it.name == "Alergias" }?.value?.value.toString(),
@@ -281,7 +309,7 @@ data class ProximoObjetivo(
     var unidaddemedida: String = "",
     var cantidadmedidaactual: Double = 0.0,
     var cantidadmedidadeseada: Double = 0.0,
-    var fechacreacion: String = "",
+    var fechamodificacion: String = "",
     var fechacumplimiento: String = "",
 ){
 
@@ -321,8 +349,8 @@ data class ProximoObjetivo(
                 validate = true
             ),
             DataElement(
-                name = "Fecha de creacion",
-                value = mutableStateOf( fechacreacion ),
+                name = "Ultima Modificacion",
+                value = mutableStateOf( fechamodificacion ),
                 type = Dat.AutoFecha
             ),
             DataElement(
@@ -342,7 +370,7 @@ fun getProximoObjetivo( info: List<DataElement<Any>> ): ProximoObjetivo {
         unidaddemedida = info.find { it.name == "Unidad de medida del objetivo" }?.value?.value.toString(),
         cantidadmedidaactual = info.find { it.name == "Medida actual" }?.value?.value.toString().toDouble(),
         cantidadmedidadeseada = info.find { it.name == "Medida deseada" }?.value?.value.toString().toDouble(),
-        fechacreacion = info.find { it.name == "Fecha de creacion" }?.value?.value.toString(),
+        fechamodificacion = info.find { it.name == "Ultima Modificacion" }?.value?.value.toString(),
         fechacumplimiento = info.find { it.name == "Fecha de cumplimiento" }?.value?.value.toString()
     )
 }
@@ -365,25 +393,13 @@ data class Ejecucion(
 }
 
 data class Rutina(
-    val id: String,
-    var idusuario: String = "",
+    var id: String = "",
+    var fechamodificacion: String = "",
     var dias: MutableList<String> = mutableListOf(),
     var descripcionrutina: String = "",
     var recomendacionesrutina: String = "",
     var idimagenrutina: String = ""
 )
-
-data class RutinaData(
-    val id: String,
-    var dias: MutableList<String> = mutableListOf(),
-    var descripcionrutina: String = "",
-    var recomendacionesrutina: String = "",
-    var idimagenrutina: String = ""
-){
-    fun toJson():String{
-        return Gson().toJson(this)
-    }
-}
 
 data class Dia(
     val id: String,
@@ -412,7 +428,7 @@ data class Ejercicio(
 data class Serie(
     val id: String,
     var repeticiones: Int = 0,
-    var tejecucionund: String,
+    var tejecucionund: String, // TODO: Incluir serie de descanso
     var patronejecucion: String
 ){
     fun toJson():String{

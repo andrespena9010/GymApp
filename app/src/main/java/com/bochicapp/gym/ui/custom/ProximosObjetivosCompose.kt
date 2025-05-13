@@ -25,7 +25,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,8 +37,13 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,42 +55,46 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.bochicapp.gym.data.model.*
+import com.bochicapp.gym.data.model.Dat
+import com.bochicapp.gym.data.model.ProximoObjetivo
+import com.bochicapp.gym.data.model.TomaDatosFisicos
+import com.bochicapp.gym.data.model.comparaObjetos
+import com.bochicapp.gym.data.model.firstEmpty
+import com.bochicapp.gym.data.model.getProximoObjetivo
+import com.bochicapp.gym.data.model.toAAMMDDHHMMSS
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
 
 @Composable
-fun TomaDatosFisicosCompose (
+fun ProximosObjetivosCompose (
     viewModel: GymViewModelClass = GymViewModel,
     modifier: Modifier
 ) {
 
-    val user by viewModel.usuario.collectAsStateWithLifecycle()
-    val rutinasIdList = user.rutinas
     val navViews by viewModel.navViews.collectAsStateWithLifecycle()
     var listId by rememberSaveable { mutableStateOf( "" ) }
-    var tomasDeDatos by rememberSaveable { mutableStateOf( listOf<TomaDatosFisicos>() /*List(15){ TomaDatosFisicos() }*/ ) }
-    var tomaToEdit by rememberSaveable { mutableStateOf( TomaDatosFisicos().toDataList() ) }
-    var andtesDe by rememberSaveable { mutableStateOf( TomaDatosFisicos().toDataList() ) }
+    var objetivos by rememberSaveable { mutableStateOf( listOf<ProximoObjetivo>() ) }
+    var objToEdit by rememberSaveable { mutableStateOf( ProximoObjetivo().toDataList() ) }
+    var andtesDe by rememberSaveable { mutableStateOf( ProximoObjetivo().toDataList() ) }
     var changes by rememberSaveable { mutableStateOf( false ) }
-    var editToma by rememberSaveable { mutableStateOf( false ) }
+    var editObj by rememberSaveable { mutableStateOf( false ) }
     val fondo by animateColorAsState(
-        targetValue = if (editToma) Color( 0x55000000 ) else Color( 0xCCFFFFFF ),
+        targetValue = if (editObj) Color( 0x55000000 ) else Color( 0xCCFFFFFF ),
         animationSpec = tween(durationMillis = 1000)
     )
-    var labelColor = if ( editToma ) Color.White else Color.Black
+    var labelColor = if ( editObj ) Color.White else Color.Black
 
     fun validaCambios () {
-        changes = !comparaObjetos( tomaToEdit, andtesDe )
+        changes = !comparaObjetos( objToEdit, andtesDe )
     }
 
     LaunchedEffect( navViews ) {
         val newId = navViews.keys.lastOrNull()
         newId?.let {
             listId = newId
-            viewModel.getTomasDeDatos( newId ){ tomas ->
-                tomasDeDatos = tomas
+            viewModel.getProximosObjetivos( newId ){ tomas ->
+                objetivos = tomas
             }
         }
     }
@@ -100,7 +110,7 @@ fun TomaDatosFisicosCompose (
     ){
 
         AnimatedContent(
-            targetState = editToma,
+            targetState = editObj,
             modifier = Modifier
                 .zIndex(1f)
                 .padding(25.dp)
@@ -108,10 +118,10 @@ fun TomaDatosFisicosCompose (
                 .size(50.dp)
                 .clickable(
                     onClick = {
-                        andtesDe = TomaDatosFisicos().toDataList()
-                        tomaToEdit = TomaDatosFisicos().toDataList()
+                        andtesDe = ProximoObjetivo().toDataList()
+                        objToEdit = ProximoObjetivo().toDataList()
                         validaCambios()
-                        editToma = !editToma
+                        editObj = !editObj
                     }
                 ),
             transitionSpec = {
@@ -155,7 +165,7 @@ fun TomaDatosFisicosCompose (
 
         }
 
-        if ( changes && editToma ){
+        if ( changes && editObj ){
             Box(
                 modifier = Modifier
                     .zIndex( 2f )
@@ -169,19 +179,19 @@ fun TomaDatosFisicosCompose (
                     .background( Color( 0xFF5555CC ) )
                     .clickable(
                         onClick = {
-                            val rellenar = firstEmpty( tomaToEdit )
+                            val rellenar = firstEmpty( objToEdit )
                             if ( rellenar == null ){
-                                viewModel.updateTomaDatosFisicos ( getTomaDatosFisicos( tomaToEdit ), listId ){ toma ->
-                                    val new = tomasDeDatos.toMutableList()
-                                    val i = new.indexOfFirst { it.id == toma.id }
+                                viewModel.updateProximoObjetivo ( getProximoObjetivo( objToEdit ), listId ){ objetivo ->
+                                    val new = objetivos.toMutableList()
+                                    val i = new.indexOfFirst { it.id == objetivo.id }
                                     if ( i != -1 ) {
-                                        new[i] = toma
+                                        new[i] = objetivo
                                     } else {
-                                        new.add(toma)
+                                        new.add(objetivo)
                                     }
-                                    tomaToEdit = TomaDatosFisicos().toDataList()
-                                    tomasDeDatos = new.toList()
-                                    editToma = false
+                                    objToEdit = ProximoObjetivo().toDataList()
+                                    objetivos = new.toList()
+                                    editObj = false
                                 }
                             } else {
                                 viewModel.sendSnackMessage("Debe rellenar el campo ${ rellenar.name }.")
@@ -193,16 +203,16 @@ fun TomaDatosFisicosCompose (
                 Text(
                     modifier = Modifier
                         .padding( 10.dp ),
-                    text = "Crear/Modificar Toma"
+                    text = "Crear/Modificar Objetivo"
                 )
             }
         }
 
-        if ( !editToma ){
+        if ( !editObj ){
 
-            if ( tomasDeDatos.isEmpty()  ){
+            if ( objetivos.isEmpty()  ){
 
-                Text("No hay tomas de datos")
+                Text("No hay objetivos")
 
             } else {
 
@@ -213,7 +223,7 @@ fun TomaDatosFisicosCompose (
                     horizontalAlignment = Alignment.CenterHorizontally
                 ){
 
-                    items ( tomasDeDatos ){ toma ->
+                    items ( objetivos ){ objetivo ->
 
                         var detalle by remember { mutableStateOf(false) }
 
@@ -233,16 +243,16 @@ fun TomaDatosFisicosCompose (
                             Text(
                                 modifier = Modifier
                                     .padding( 10.dp ),
-                                text = toma.fechamodificacion.toAAMMDDHHMMSS()
+                                text = objetivo.fechamodificacion.toAAMMDDHHMMSS()
                             )
                             Icon(
                                 modifier = Modifier
                                     .clickable(
                                         onClick = {
-                                            andtesDe = toma.toDataList()
-                                            tomaToEdit = toma.toDataList()
+                                            andtesDe = objetivo.toDataList()
+                                            objToEdit = objetivo.toDataList()
                                             validaCambios()
-                                            editToma = true
+                                            editObj = true
                                         }
                                     )
                                     .padding( 5.dp ),
@@ -257,7 +267,7 @@ fun TomaDatosFisicosCompose (
                             exit = shrinkVertically() + fadeOut()
                         ) {
 
-                            val tomaDetails by rememberSaveable { mutableStateOf( toma.toDataList() ) }
+                            val tomaDetails = objetivo.toDataList()
 
                             LazyColumn (
                                 modifier = Modifier
@@ -287,10 +297,13 @@ fun TomaDatosFisicosCompose (
                                                         .padding(5.dp)
                                                         .fillMaxWidth()
                                                         .clip( RoundedCornerShape( 5.dp ) )
-                                                        .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                                        .background( if ( editObj ) Color( 0xCCFFFFFF ) else Color.Transparent ),
                                                     value = campo.value.value.toString(),
-                                                    onValueChange = {},
-                                                    enabled = editToma
+                                                    onValueChange = {
+                                                        campo.value.value = it
+                                                        //validaCambios()
+                                                    },
+                                                    enabled = editObj
                                                 )
                                             }
 
@@ -313,105 +326,14 @@ fun TomaDatosFisicosCompose (
                                                         .padding(5.dp)
                                                         .fillMaxWidth()
                                                         .clip( RoundedCornerShape( 5.dp ) )
-                                                        .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                                        .background( if ( editObj ) Color( 0xCCFFFFFF ) else Color.Transparent ),
                                                     value = campo.value.value.toString(),
-                                                    onValueChange = {},
-                                                    enabled = editToma,
+                                                    onValueChange = {
+                                                        campo.value.value = if ( Regex("^$|^\\d+|\\d+\\.|\\d+\\.\\d+$").matches( it ) ) it else "0"
+                                                    },
+                                                    enabled = editObj,
                                                     keyboardOptions = KeyboardOptions( keyboardType = KeyboardType.Number )
                                                 )
-                                            }
-
-                                        }
-
-                                        Dat.Obj -> {
-
-                                            Column (
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                            ){
-
-                                                HorizontalDivider()
-                                                Text(
-                                                    text = campo.name,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = labelColor
-                                                )
-                                                Text(
-                                                    text = campo.value.value.toString()
-                                                )
-                                                if ( campo.value.value.toString().isNotEmpty() ){
-
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .padding( 10.dp )
-                                                            .align( Alignment.CenterHorizontally )
-                                                            .shadow(
-                                                                elevation = 5.dp,
-                                                                shape = RoundedCornerShape( 20.dp )
-                                                            )
-                                                            .clip( RoundedCornerShape( 20.dp ) )
-                                                            .background( Color( 0xFFCCCCCC ) )
-                                                            .clickable(
-                                                                onClick = {
-                                                                    campo.action( viewModel, Options.See )
-                                                                }
-                                                            ),
-                                                        contentAlignment = Alignment.Center
-                                                    ){
-                                                        Text(
-                                                            modifier = Modifier
-                                                                .padding( 10.dp ),
-                                                            text = "Ver rutina"
-                                                        )
-                                                    }
-
-                                                }
-
-                                            }
-
-                                        }
-
-                                        Dat.Ls -> {
-
-                                            Column (
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                            ){
-
-                                                HorizontalDivider()
-                                                Text(
-                                                    text = campo.name,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = labelColor
-                                                )
-                                                if ( campo.value.value.toString().isNotEmpty() ){
-
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .padding( 10.dp )
-                                                            .align( Alignment.CenterHorizontally )
-                                                            .shadow(
-                                                                elevation = 5.dp,
-                                                                shape = RoundedCornerShape( 20.dp )
-                                                            )
-                                                            .clip( RoundedCornerShape( 20.dp ) )
-                                                            .background( Color( 0xFFCCCCCC ) )
-                                                            .clickable(
-                                                                onClick = {
-                                                                    campo.action( viewModel, Options.GoTo )
-                                                                }
-                                                            ),
-                                                        contentAlignment = Alignment.Center
-                                                    ){
-                                                        Text(
-                                                            modifier = Modifier
-                                                                .padding( 10.dp ),
-                                                            text = "Ver Objetivos"
-                                                        )
-                                                    }
-
-                                                }
-
                                             }
 
                                         }
@@ -419,7 +341,6 @@ fun TomaDatosFisicosCompose (
                                     }
 
                                 }
-
                             }
 
                         }
@@ -430,7 +351,9 @@ fun TomaDatosFisicosCompose (
 
             }
 
-        } else {
+        }
+
+        if ( editObj ){
 
             LazyColumn (
                 modifier = Modifier
@@ -438,9 +361,9 @@ fun TomaDatosFisicosCompose (
                     .fillMaxHeight(0.8f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
-                items ( tomaToEdit ){ campo ->
+                items ( objToEdit ){ toma ->
 
-                    when ( campo.type ){
+                    when ( toma.type ){
 
                         Dat.Txt -> {
 
@@ -450,7 +373,7 @@ fun TomaDatosFisicosCompose (
                             ){
                                 HorizontalDivider()
                                 Text(
-                                    text = campo.name,
+                                    text = toma.name,
                                     fontWeight = FontWeight.Bold,
                                     color = labelColor
                                 )
@@ -459,13 +382,13 @@ fun TomaDatosFisicosCompose (
                                         .padding(5.dp)
                                         .fillMaxWidth()
                                         .clip( RoundedCornerShape( 5.dp ) )
-                                        .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
-                                    value = campo.value.value.toString(),
+                                        .background( if ( editObj ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                    value = toma.value.value.toString(),
                                     onValueChange = {
-                                        campo.value.value = it
+                                        toma.value.value = it
                                         validaCambios()
                                     },
-                                    enabled = editToma
+                                    enabled = editObj
                                 )
                             }
 
@@ -479,7 +402,7 @@ fun TomaDatosFisicosCompose (
                             ){
                                 HorizontalDivider()
                                 Text(
-                                    text = campo.name,
+                                    text = toma.name,
                                     fontWeight = FontWeight.Bold,
                                     color = labelColor
                                 )
@@ -488,107 +411,15 @@ fun TomaDatosFisicosCompose (
                                         .padding(5.dp)
                                         .fillMaxWidth()
                                         .clip( RoundedCornerShape( 5.dp ) )
-                                        .background( if ( editToma ) Color( 0xCCFFFFFF ) else Color.Transparent ),
-                                    value = campo.value.value.toString(),
+                                        .background( if ( editObj ) Color( 0xCCFFFFFF ) else Color.Transparent ),
+                                    value = toma.value.value.toString(),
                                     onValueChange = {
-                                        campo.value.value = if ( Regex("^$|^\\d+|\\d+\\.|\\d+\\.\\d+$").matches( it ) ) it else "0"
+                                        toma.value.value = if ( Regex("^$|^\\d+|\\d+\\.|\\d+\\.\\d+$").matches( it ) ) it else "0"
                                         validaCambios()
                                     },
-                                    enabled = editToma,
+                                    enabled = editObj,
                                     keyboardOptions = KeyboardOptions( keyboardType = KeyboardType.Number )
                                 )
-                            }
-
-                        }
-
-                        Dat.Obj -> {
-
-                            Column (
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                            ){
-
-                                HorizontalDivider()
-                                Text(
-                                    text = campo.name,
-                                    fontWeight = FontWeight.Bold,
-                                    color = labelColor
-                                )
-                                Text(
-                                    text = campo.value.value.toString()
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .padding( 10.dp )
-                                        .align( Alignment.CenterHorizontally )
-                                        .shadow(
-                                            elevation = 5.dp,
-                                            shape = RoundedCornerShape( 20.dp )
-                                        )
-                                        .clip( RoundedCornerShape( 20.dp ) )
-                                        .background( Color( 0xFFCCCCCC ) )
-                                        .clickable(
-                                            onClick = {
-                                                campo.action( viewModel, Options.Select )
-                                            }
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ){
-                                    Text(
-                                        modifier = Modifier
-                                            .padding( 10.dp ),
-                                        text = "Seleccionar rutina"
-                                    )
-                                }
-
-                            }
-
-                        }
-
-                        Dat.Ls -> {
-
-                            Column (
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                            ){
-
-                                HorizontalDivider()
-                                Text(
-                                    text = campo.name,
-                                    fontWeight = FontWeight.Bold,
-                                    color = labelColor
-                                )
-                                val tomaId = tomaToEdit.find { it.name == "Id" }?.value?.value.toString()
-                                if ( tomaId.isNotEmpty() ){
-
-                                    Box(
-                                        modifier = Modifier
-                                            .padding( 10.dp )
-                                            .align( Alignment.CenterHorizontally )
-                                            .shadow(
-                                                elevation = 5.dp,
-                                                shape = RoundedCornerShape( 20.dp )
-                                            )
-                                            .clip( RoundedCornerShape( 20.dp ) )
-                                            .background( Color( 0xFFCCCCCC ) )
-                                            .clickable(
-                                                onClick = {
-                                                    campo.action( viewModel, Options.GoTo )
-                                                }
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ){
-
-                                        Text(
-                                            modifier = Modifier
-                                                .padding( 10.dp ),
-                                            text = "Ver Objetivos"
-                                        )
-
-                                    }
-
-                                }
-
                             }
 
                         }
@@ -610,7 +441,7 @@ fun TomaDatosFisicosCompose (
 )
 @Composable
 private fun Vertical(){
-    Views.TomaDatosFisicosView.Content(Modifier)
+    Views.ProximosObjetivosView.Content(Modifier)
 }
 
 @Preview(
@@ -618,5 +449,5 @@ private fun Vertical(){
 )
 @Composable
 private fun Horizontal(){
-    Views.TomaDatosFisicosView.Content(Modifier)
+    Views.ProximosObjetivosView.Content(Modifier)
 }

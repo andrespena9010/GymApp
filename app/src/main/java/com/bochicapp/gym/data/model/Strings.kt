@@ -18,7 +18,7 @@ fun String.toProximoObjetivo(): ProximoObjetivo {
     return Gson().fromJson( this, ProximoObjetivo::class.java )
 }
 
-fun String.toRutinaData(): Rutina {
+fun String.toRutina(): Rutina {
     return Gson().fromJson( this, Rutina::class.java )
 }
 

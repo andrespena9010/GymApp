@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
+import kotlin.collections.set
 
 open class GymViewModelClass (): ViewModel() {
 
@@ -24,17 +26,20 @@ open class GymViewModelClass (): ViewModel() {
     private lateinit var uiScope: CoroutineScope
     private lateinit var snackBarState: SnackbarHostState
 
-    private val _selectedView = MutableStateFlow<GymView>( Views.PrincipalV )
+    private val _selectedView = MutableStateFlow<GymView>( Views.PrincipalView )
     val selectedView: StateFlow<GymView> = _selectedView.asStateFlow()
 
-    private val _navIds = MutableStateFlow( listOf<String>() )
-    val navIds: StateFlow<List<String>> = _navIds.asStateFlow()
+    private val _navViews = MutableStateFlow( linkedMapOf<String, GymView>().apply { this[ "principal" ] = Views.PrincipalView } )
+    val navViews: StateFlow<LinkedHashMap<String, GymView>> = _navViews.asStateFlow()
+
+    private val _selection = MutableStateFlow( false )
+    val selection: StateFlow<Boolean> = _selection.asStateFlow()
+
+    private val _returnValue = MutableStateFlow( "" )
+    val returnValue: StateFlow<String> = _returnValue.asStateFlow()
 
     private val _usuario = MutableStateFlow( Usuario( "" ) )
     val usuario: StateFlow<Usuario> = _usuario.asStateFlow()
-
-    /*private val _lastUpdates = MutableStateFlow( listOf<String>() )
-    val lastUpdates: StateFlow<List<String>> = _lastUpdates.asStateFlow()*/
 
     fun load( context: Context ){
         viewModelScope.launch ( Dispatchers.IO ){
@@ -54,14 +59,29 @@ open class GymViewModelClass (): ViewModel() {
         }
     }
 
-    fun goTo(view: GymView, idToAdd: String? = null, idToRemove: String? = null ){
-        _navIds.update { current ->
-            val new = current.toMutableList()
-            idToAdd?.let { new.add( idToAdd ) }
-            idToRemove?.let { new.remove( idToRemove ) }
-            new.toList()
+    fun goTo( view: GymView, id: String? = null, select: Boolean? = null ){
+        select?.let {
+            _selection.update { select }
+        }
+        _navViews.update { current ->
+            val navId = id ?: UUID.randomUUID().toString()
+            LinkedHashMap( current ).apply {
+                this[ navId ] = view
+            }
         }
         _selectedView.update { view }
+    }
+
+    fun goBack( returnValue: String? = null ){
+        returnValue?.let {
+            _returnValue.update { returnValue }
+        }
+        _navViews.update { current ->
+            LinkedHashMap( current ).apply {
+                this.remove( this.keys.last() )
+            }
+        }
+        _selectedView.update { _navViews.value.entries.last().value }
     }
 
     fun updateUser( user: Usuario ){
@@ -103,16 +123,25 @@ open class GymViewModelClass (): ViewModel() {
         }
     }
 
-    fun updateProximoObjetivo( objetivo: ProximoObjetivo, onUpdate: ( ProximoObjetivo ) -> Unit ){
+    fun updateProximoObjetivo( objetivo: ProximoObjetivo, idList: String, onUpdate: ( ProximoObjetivo ) -> Unit ){
         viewModelScope.launch ( Dispatchers.IO ){
-            val objetivoId = repository.updateProximoObjetivo( objetivo )
+            val objetivoId = repository.updateProximoObjetivo(
+                proximoObjetivo = objetivo,
+                idList = idList
+            )
             if ( objetivoId != null ){
                 objetivo.id = objetivoId
-                sendSnackMessage( "Toma de datos agregada." )
+                sendSnackMessage( "Objetivo actualizado." )
                 onUpdate( objetivo )
             } else {
-                sendSnackMessage( "Error al crear la toma de datos." )
+                sendSnackMessage( "Error al crear el objetivo." )
             }
+        }
+    }
+
+    fun getRutinas(id: String, onLoad: ( List<Rutina> ) -> Unit ) {
+        viewModelScope.launch ( Dispatchers.IO ){
+            onLoad( repository.loadRutinas( id ) )
         }
     }
 

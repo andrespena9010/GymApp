@@ -16,7 +16,7 @@ fun Ejecucion(
 ) {
 
     BackHandler {
-        viewModel.goTo( Views.PrincipalV )
+        viewModel.goTo( Views.PrincipalView )
     }
 
     Box(

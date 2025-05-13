@@ -1,0 +1,83 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f4f8;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.rutina-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ejercicio {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.ejercicio h2 {
+    font-size: 20px;
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.ejercicio p {
+    font-size: 14px;
+    color: #555;
+    margin: 5px 0;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 ratio */
+    height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    .ejercicio {
+        padding: 10px;
+    }
+
+    .ejercicio h2 {
+        font-size: 18px;
+    }
+
+    .ejercicio p {
+        font-size: 13px;
+    }
+}

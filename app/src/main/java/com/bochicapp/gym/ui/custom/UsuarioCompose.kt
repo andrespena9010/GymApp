@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -38,6 +37,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bochicapp.gym.data.model.Dat
+import com.bochicapp.gym.data.model.Options
 import com.bochicapp.gym.data.model.comparaObjetos
 import com.bochicapp.gym.data.model.getUsuario
 import com.bochicapp.gym.ui.model.Views
@@ -60,12 +60,12 @@ fun UsuarioCompose(
     )
     var labelColor = if ( edit ) Color.White else Color.Black
 
-    LaunchedEffect( usuario, edit ) {
+    fun validaCambios() {
         changes = !comparaObjetos( userData, usuario.toDataList() )
     }
 
     BackHandler {
-        viewModel.goTo( Views.PrincipalV )
+        viewModel.goBack()
     }
 
     Box(
@@ -88,6 +88,7 @@ fun UsuarioCompose(
                 .background( Color( 0xFFCCCCCC ) )
                 .clickable(
                     onClick = {
+                        validaCambios()
                         edit = !edit
                     }
                 ),
@@ -114,6 +115,8 @@ fun UsuarioCompose(
                     .clickable(
                         onClick = {
                             viewModel.updateUser( getUsuario( userData ) )
+                            edit = false
+                            validaCambios()
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -176,7 +179,10 @@ fun UsuarioCompose(
                                     .clip( RoundedCornerShape( 5.dp ) )
                                     .background( if ( edit ) Color( 0xCCFFFFFF ) else Color.Transparent ),
                                 value = elemenet.value.value.toString(),
-                                onValueChange = { elemenet.value.value = it },
+                                onValueChange = {
+                                    elemenet.value.value = it
+                                    validaCambios()
+                                },
                                 enabled = edit
                             )
                         }
@@ -209,7 +215,7 @@ fun UsuarioCompose(
                                         .background( Color( 0xFFCCCCCC ) )
                                         .clickable(
                                             onClick = {
-                                                elemenet.onClick( viewModel )
+                                                elemenet.action( viewModel, Options.GoTo )
                                             }
                                         ),
                                     contentAlignment = Alignment.Center
@@ -240,7 +246,7 @@ fun UsuarioCompose(
 )
 @Composable
 private fun Vertical(){
-    Views.InfoUsuarioV.Content(Modifier)
+    Views.UsuarioView.Content(Modifier)
 }
 
 @Preview(
@@ -248,5 +254,5 @@ private fun Vertical(){
 )
 @Composable
 private fun Horizontal(){
-    Views.InfoUsuarioV.Content(Modifier)
+    Views.UsuarioView.Content(Modifier)
 }
