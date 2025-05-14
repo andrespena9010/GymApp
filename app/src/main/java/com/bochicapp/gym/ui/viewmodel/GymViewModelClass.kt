@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
-import kotlin.collections.set
 
 open class GymViewModelClass (): ViewModel() {
 
@@ -29,14 +27,8 @@ open class GymViewModelClass (): ViewModel() {
     private val _selectedView = MutableStateFlow<GymView>( Views.PrincipalView )
     val selectedView: StateFlow<GymView> = _selectedView.asStateFlow()
 
-    private val _navViews = MutableStateFlow( linkedMapOf<String, GymView>().apply { this[ "principal" ] = Views.PrincipalView } )
-    val navViews: StateFlow<LinkedHashMap<String, GymView>> = _navViews.asStateFlow()
-
-    private val _selection = MutableStateFlow( false )
-    val selection: StateFlow<Boolean> = _selection.asStateFlow()
-
-    private val _returnValue = MutableStateFlow( "" )
-    val returnValue: StateFlow<String> = _returnValue.asStateFlow()
+    private val _navInfo = MutableStateFlow( Info() )
+    val navInfo: StateFlow<Info> = _navInfo.asStateFlow()
 
     private val _usuario = MutableStateFlow( Usuario( "" ) )
     val usuario: StateFlow<Usuario> = _usuario.asStateFlow()
@@ -59,29 +51,9 @@ open class GymViewModelClass (): ViewModel() {
         }
     }
 
-    fun goTo( view: GymView, id: String? = null, select: Boolean? = null ){
-        select?.let {
-            _selection.update { select }
-        }
-        _navViews.update { current ->
-            val navId = id ?: UUID.randomUUID().toString()
-            LinkedHashMap( current ).apply {
-                this[ navId ] = view
-            }
-        }
+    fun goTo( view: GymView, navInfo: Info? = null ){
+        _navInfo.update { navInfo ?: Info() }
         _selectedView.update { view }
-    }
-
-    fun goBack( returnValue: String? = null ){
-        returnValue?.let {
-            _returnValue.update { returnValue }
-        }
-        _navViews.update { current ->
-            LinkedHashMap( current ).apply {
-                this.remove( this.keys.last() )
-            }
-        }
-        _selectedView.update { _navViews.value.entries.last().value }
     }
 
     fun updateUser( user: Usuario ){
@@ -112,7 +84,7 @@ open class GymViewModelClass (): ViewModel() {
                 sendSnackMessage( "Toma de datos actualizada." )
                 onUpdate( toma )
             } else {
-                sendSnackMessage( "Error al crear la toma de datos." )
+                sendSnackMessage( "Error al actualizar la toma de datos." )
             }
         }
     }
@@ -134,7 +106,7 @@ open class GymViewModelClass (): ViewModel() {
                 sendSnackMessage( "Objetivo actualizado." )
                 onUpdate( objetivo )
             } else {
-                sendSnackMessage( "Error al crear el objetivo." )
+                sendSnackMessage( "Error al actualizar el objetivo." )
             }
         }
     }
@@ -142,6 +114,44 @@ open class GymViewModelClass (): ViewModel() {
     fun getRutinas(id: String, onLoad: ( List<Rutina> ) -> Unit ) {
         viewModelScope.launch ( Dispatchers.IO ){
             onLoad( repository.loadRutinas( id ) )
+        }
+    }
+
+    fun updateRutina( rutina: Rutina, idList: String, onUpdate: ( Rutina ) -> Unit ){
+        viewModelScope.launch ( Dispatchers.IO ){
+            val rutinaId = repository.updateRutina(
+                rutina = rutina,
+                idList = idList
+            )
+            if ( rutinaId != null ){
+                rutina.id = rutinaId
+                sendSnackMessage( "Rutina actualizada." )
+                onUpdate( rutina )
+            } else {
+                sendSnackMessage( "Error al actualizar la rutina." )
+            }
+        }
+    }
+
+    fun getDias( id: String, onLoad: ( List<Dia> ) -> Unit ) {
+        viewModelScope.launch ( Dispatchers.IO ){
+            onLoad( repository.loadRutinas( id ) )
+        }
+    }
+
+    fun updateDia( dia: Dia, idList: String, onUpdate: ( Dia ) -> Unit ){
+        viewModelScope.launch ( Dispatchers.IO ){
+            val diaId = repository.updateDia(
+                dia = dia,
+                idList = idList
+            )
+            if ( diaId != null ){
+                dia.id = diaId
+                sendSnackMessage( "Dia actualizado." )
+                onUpdate( dia )
+            } else {
+                sendSnackMessage( "Error al actualizar el dia." )
+            }
         }
     }
 

@@ -26,7 +26,6 @@ class DataBase(
     private val dataDirectory = File( raiz, "Data" )
     private var dataList = listOf<String>()
     private val mutexMap = ConcurrentHashMap<String, Mutex>()
-    private val filesToCopy = mutableMapOf<String, ByteArray>()
     private val userFile = File( dataDirectory, "6d8a8e8e-3b4a-4c5f-9c3d-7e6f5d4c3b2a" )
     private var userId = ""
 
@@ -41,7 +40,6 @@ class DataBase(
         dataDirectory.list()?.let { array ->
             dataList = array.toList()
         }
-        filesToCopy.put( "png_1", context.resources.openRawResource( R.raw.png_1 ).readBytes() )
         if ( userFile.exists() ){
             userId = Gson().fromJson( userFile.readBytes().toString( Charsets.UTF_8 ), String::class.java )
         } else {
@@ -49,6 +47,8 @@ class DataBase(
             userFile.writeBytes( Gson().toJson( id ).toByteArray() )
             userId = id
         }
+
+        copyFiles( context )
     }
     private fun getMutex( id: String ): Mutex {
         return mutexMap.getOrPut( id ) { Mutex() }
@@ -58,17 +58,19 @@ class DataBase(
         mutexMap.remove( id )
     }
 
-    suspend fun copyFiles(){
-        filesToCopy.forEach { file ->
-            updateObject( file.key, file.value )
-        }
+    fun copyFiles( context: Context ){
+        val default1 = File( dataDirectory, "png_1" )
+        if ( !default1.exists() ){ default1.writeBytes( context.resources.openRawResource( R.raw.png_1 ).readBytes() ) }
+        val default2 = File( dataDirectory, "png_2" )
+        if ( !default2.exists() ){ default2.writeBytes( context.resources.openRawResource( R.raw.png_2 ).readBytes() ) }
     }
 
     private suspend fun getObject( id: String ): ByteArray {
         var response = ByteArray(0)
         getMutex( id ).withLock {
             try {
-                response = File( dataDirectory, id ).readBytes()
+                val file = File( dataDirectory, id )
+                if ( file.exists() ){ response = file.readBytes() }
             } catch ( e: Exception ){
                 val sw = StringWriter()
                 e.printStackTrace( PrintWriter( sw ) )
@@ -109,7 +111,6 @@ class DataBase(
                 val historialId = UUID.randomUUID().toString()
                 val rutinasId = UUID.randomUUID().toString()
                 user.id = userId
-                user.idfotoperfil = "png_1"
                 if ( updateObject( tomaDeDatosId, "[]".toByteArray() ) ) user.tomadatosfisicos = tomaDeDatosId
                 if ( updateObject( historialId, "[]".toByteArray() ) ) user.historial = historialId
                 if ( updateObject( rutinasId, "[]".toByteArray() ) ) user.rutinas = rutinasId
@@ -258,6 +259,38 @@ class DataBase(
             }
         }
         return rutinas.toList()
+    }
+
+    suspend fun updateRutina( rutina: Rutina, idList: String ): String? {
+        try {
+            if ( rutina.id.isEmpty() ) {
+                rutina.id = UUID.randomUUID().toString()
+                val dias = UUID.randomUUID().toString()
+                if ( updateObject( dias, "[]".toByteArray() ) ) rutina.dias = dias
+            }
+            if ( idList.isNotEmpty() ){
+                val res = getObject( idList ).toString( Charsets.UTF_8 )
+                if ( res.isNotEmpty() ){
+                    val list = res.toList().toMutableList()
+                    rutina.fechamodificacion = Instant.now().toString()
+                    updateObject( rutina.id ,rutina.toJson().toByteArray() )
+                    val i = list.indexOfFirst { it == rutina.id }
+                    if ( i != -1 ) {
+                        list[i] = rutina.id
+                    } else {
+                        list.add( rutina.id )
+                    }
+                    updateObject( idList, list.toList().toJson().toByteArray() )
+                }
+            }
+            return rutina.id
+        } catch ( e: Exception ){
+            val sw = StringWriter()
+            e.printStackTrace( PrintWriter( sw ) )
+            // Pendiente usar los sw para documentos de log con los valores correspondientes.
+            Log.e("DataBase.updateRutina() -> ", e.message.toString() )
+        }
+        return null
     }
 
     suspend fun getPng(id: String ): ImageBitmap {

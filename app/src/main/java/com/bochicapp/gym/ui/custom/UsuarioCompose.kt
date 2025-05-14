@@ -37,6 +37,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bochicapp.gym.data.model.Dat
+import com.bochicapp.gym.data.model.Info
 import com.bochicapp.gym.data.model.Options
 import com.bochicapp.gym.data.model.comparaObjetos
 import com.bochicapp.gym.data.model.getUsuario
@@ -51,6 +52,7 @@ fun UsuarioCompose(
 ) {
 
     val usuario by viewModel.usuario.collectAsStateWithLifecycle()
+    val info by viewModel.navInfo.collectAsStateWithLifecycle()
     val userData by rememberSaveable { mutableStateOf( usuario.toDataList() ) }
     var edit by rememberSaveable { mutableStateOf( false ) }
     var changes by rememberSaveable { mutableStateOf( false ) }
@@ -65,7 +67,11 @@ fun UsuarioCompose(
     }
 
     BackHandler {
-        viewModel.goBack()
+        if ( info.launcherView == null ){
+            viewModel.goTo( Views.PrincipalView )
+        } else {
+            viewModel.goTo( info.launcherView!! )
+        }
     }
 
     Box(
@@ -139,7 +145,7 @@ fun UsuarioCompose(
 
                 when ( elemenet.type ){
 
-                    Dat.Png -> {
+                    Dat.Img -> {
 
                         var image by remember { mutableStateOf( createBitmap(100, 100).asImageBitmap() ) }
                         viewModel.getPng(
@@ -215,7 +221,7 @@ fun UsuarioCompose(
                                         .background( Color( 0xFFCCCCCC ) )
                                         .clickable(
                                             onClick = {
-                                                elemenet.action( viewModel, Options.GoTo )
+                                                elemenet.action( viewModel, Options.GoTo, "")
                                             }
                                         ),
                                     contentAlignment = Alignment.Center

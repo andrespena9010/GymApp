@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bochicapp.gym.data.model.DataElement
+import com.bochicapp.gym.data.model.Info
 import com.bochicapp.gym.data.model.Options
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModel
@@ -37,15 +38,25 @@ fun Principal (
         DataElement(
             name = "Iniciar rutina",
             value = mutableStateOf( "" ),
-            action = { vm, obj ->
-                vm.goTo( Views.EjecucionView )
+            action = { vm, obj, stringInfo ->
+                vm.goTo(
+                    view = Views.EjecucionView,
+                    navInfo = Info(
+                        launcherView = Views.PrincipalView,
+                    )
+                )
             }
         ),
         DataElement(
             name = "Informacion de usuario",
             value = mutableStateOf( "" ),
-            action = { vm, obj ->
-                vm.goTo( Views.UsuarioView )
+            action = { vm, obj, stringInfo ->
+                vm.goTo(
+                    view = Views.UsuarioView,
+                    navInfo = Info(
+                        launcherView = Views.PrincipalView,
+                    )
+                )
             }
         )
     )
@@ -69,7 +80,7 @@ fun Principal (
                     .background( Color.White )
                     .clickable(
                         onClick = {
-                            element.action( viewModel, Options.GoTo )
+                            element.action( viewModel, Options.GoTo, "" )
                         }
                     ),
                 contentAlignment = Alignment.Center

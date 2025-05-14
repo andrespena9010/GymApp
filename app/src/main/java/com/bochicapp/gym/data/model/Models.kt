@@ -2,6 +2,7 @@ package com.bochicapp.gym.data.model
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import com.bochicapp.gym.ui.model.GymView
 import com.bochicapp.gym.ui.model.Views
 import com.bochicapp.gym.ui.viewmodel.GymViewModelClass
 import com.google.gson.Gson
@@ -29,15 +30,25 @@ interface Type
 sealed class Dat {
     object None: Type
     object Txt: Type
-    object Png: Type
+    object Img: Type
     object Id: Type
     object Dobl: Type
-    object Lnk: Type
+    object Entero: Type
     object AutoFecha: Type
     object Compose: Type
     object Obj: Type
     object Ls: Type
 }
+
+data class Info(
+    val launcherView: GymView? = null,
+    val launcherViewId: String? = null,
+    val launcherId: String? = null,
+    val targetId: String? = null,
+    val responseToId: String? = null,
+    val selection: Boolean = false,
+    val viewObject: Boolean = false
+)
 
 data class LazyElements(
     val dataElements: List<DataElement<Any>> = listOf(),
@@ -68,7 +79,7 @@ data class DataElement<Any>(
     val name: String = "",
     var value: MutableState<Any>,
     val type: Type = Dat.None,
-    var action: ( GymViewModelClass, Option ) -> Unit = {_,_->},
+    var action: ( GymViewModelClass, Option, String ) -> Unit = {_,_,_->},
     var validate: Boolean = false
 )
 
@@ -80,7 +91,7 @@ data class Usuario(
     var telefonoUsuario: String = "",
     var contrasena: String = "",
     var genero: String = "",
-    var idfotoperfil: String = "",
+    var idfotoperfil: String = "png_1",
     var tomadatosfisicos: String = "",
     var historial: String = "",
     var rutinas: String = ""
@@ -100,7 +111,7 @@ data class Usuario(
             DataElement(
                 name = "Foto de perfil",
                 value = mutableStateOf( idfotoperfil ),
-                type = Dat.Png
+                type = Dat.Img
             ),
             DataElement(
                 name = "Nombre",
@@ -136,10 +147,14 @@ data class Usuario(
                 name = "Tomas de datos fisicos",
                 value = mutableStateOf( tomadatosfisicos ),
                 type = Dat.Ls,
-                action = { vm, opt ->
+                action = { vm, opt, stringInfo ->
                     vm.goTo(
                         view = Views.TomaDatosFisicosView,
-                        id = tomadatosfisicos
+                        navInfo = Info(
+                            launcherView = Views.UsuarioView,
+                            launcherId = id,
+                            targetId = tomadatosfisicos
+                        )
                     )
                 }
             ),
@@ -147,10 +162,14 @@ data class Usuario(
                 name = "Historial",
                 value = mutableStateOf( historial ),
                 type = Dat.Ls,
-                action = { vm, opt ->
+                action = { vm, opt, stringInfo ->
                     vm.goTo(
                         view = Views.TomaDatosFisicosView,
-                        id = historial
+                        navInfo = Info(
+                            launcherView = Views.UsuarioView,
+                            launcherId = id,
+                            targetId = historial
+                        )
                     )
                 }
             ),
@@ -158,10 +177,14 @@ data class Usuario(
                 name = "Rutinas",
                 value = mutableStateOf( rutinas ),
                 type = Dat.Ls,
-                action = { vm, opt ->
+                action = { vm, opt, stringInfo ->
                     vm.goTo(
-                        view = Views.TomaDatosFisicosView,
-                        id = rutinas
+                        view = Views.RutinasView,
+                        navInfo = Info(
+                            launcherView = Views.UsuarioView,
+                            launcherId = id,
+                            targetId = rutinas
+                        )
                     )
                 }
             )
@@ -256,17 +279,31 @@ data class TomaDatosFisicos(
                 name = "Rutina relacionada con la toma",
                 value = mutableStateOf( idrutinaenejecucion ),
                 type = Dat.Obj,
-                action = { vm, opt ->
+                action = { vm, opt, stringInfo ->
                     when ( opt ){
                         Options.Select ->{
                             vm.goTo(
                                 view = Views.RutinasView,
-                                id = idrutinaenejecucion,
-                                select = true
+                                navInfo = Info(
+                                    launcherViewId = stringInfo,
+                                    launcherView = Views.TomaDatosFisicosView,
+                                    launcherId = id,
+                                    targetId = idrutinaenejecucion,
+                                    selection = true
+                                )
                             )
                         }
                         Options.See -> {
-                            // TODO: pendiente
+                            vm.goTo(
+                                view = Views.RutinasView,
+                                navInfo = Info(
+                                    launcherViewId = stringInfo,
+                                    launcherView = Views.TomaDatosFisicosView,
+                                    launcherId = id,
+                                    targetId = idrutinaenejecucion,
+                                    viewObject = true
+                                )
+                            )
                         }
                     }
                 }
@@ -275,10 +312,15 @@ data class TomaDatosFisicos(
                 name = "Objetivos planteados",
                 value = mutableStateOf( proximosobjetivos ),
                 type = Dat.Ls,
-                action = { vm, opt ->
+                action = { vm, opt, stringInfo ->
                     vm.goTo(
                         view = Views.ProximosObjetivosView,
-                        id = proximosobjetivos
+                        navInfo = Info(
+                            launcherViewId = stringInfo,
+                            launcherView = Views.TomaDatosFisicosView,
+                            launcherId = id,
+                            targetId = proximosobjetivos
+                        )
                     )
                 }
             )
@@ -375,40 +417,117 @@ fun getProximoObjetivo( info: List<DataElement<Any>> ): ProximoObjetivo {
     )
 }
 
-data class Ejecucion(
-    val id: String,
-    var idusuario: String = "",
-    var idrutinaejecucion: String,
-    var dia: Int = 0,
-    var serie: Int = 0,
-    var fechainicioserie: String = "",
-    var fechafinalserie: String = "",
-    var dificultadpercibida: Int = 0,
-    var cantreps: Int = 0,
-    var observacionesejecucion: String = ""
-){
-    fun toJson():String{
-        return Gson().toJson(this)
-    }
-}
-
 data class Rutina(
     var id: String = "",
     var fechamodificacion: String = "",
-    var dias: MutableList<String> = mutableListOf(),
     var descripcionrutina: String = "",
     var recomendacionesrutina: String = "",
-    var idimagenrutina: String = ""
-)
+    var idimagenrutina: String = "png_2",
+    var dias: String = ""
+){
+
+    fun toJson():String{
+        return Gson().toJson(this)
+    }
+
+    fun toDataList(): List<DataElement<Any>> {
+        return listOf(
+            DataElement(
+                name = "Id",
+                value = mutableStateOf( id ),
+                type = Dat.Id
+            ),
+            DataElement(
+                name = "Ultima Modificacion",
+                value = mutableStateOf( fechamodificacion ),
+                type = Dat.AutoFecha
+            ),
+            DataElement(
+                name = "Imagen rutina",
+                value = mutableStateOf( idimagenrutina ),
+                type = Dat.Img
+            ),
+            DataElement(
+                name = "Descripcion de la rutina",
+                value = mutableStateOf( descripcionrutina ),
+                type = Dat.Txt,
+                validate = true
+            ),
+            DataElement(
+                name = "Recomendaciones",
+                value = mutableStateOf( recomendacionesrutina ),
+                type = Dat.Txt,
+                validate = true
+            ),
+            DataElement(
+                name = "Dias",
+                value = mutableStateOf( dias ),
+                type = Dat.Ls,
+                action = { vm, opt, stringInfo ->
+                    /*vm.goTo(
+                        view = Views.ProximosObjetivosView,
+                        id = dias
+                    )*/
+                }
+            )
+        )
+    }
+
+}
+
+fun getRutina( info: List<DataElement<Any>> ): Rutina {
+    return Rutina(
+        id = info.find { it.name == "Id" }?.value?.value.toString(),
+        fechamodificacion = info.find { it.name == "Ultima Modificacion" }?.value?.value.toString(),
+        descripcionrutina = info.find { it.name == "Descripcion de la rutina" }?.value?.value.toString(),
+        recomendacionesrutina = info.find { it.name == "Recomendaciones" }?.value?.value.toString(),
+        idimagenrutina = info.find { it.name == "Imagen rutina" }?.value?.value.toString(),
+        dias = info.find { it.name == "Dias" }?.value?.value.toString(),
+    )
+}
 
 data class Dia(
-    val id: String,
+    var id: String = "",
     var numerodia: Int = 0,
-    var ejercicios: MutableList<String> = mutableListOf(),
+    var ejercicios: String = "",
 ){
     fun toJson():String{
         return Gson().toJson(this)
     }
+
+    fun toDataList(): List<DataElement<Any>> {
+        return listOf(
+            DataElement(
+                name = "Id",
+                value = mutableStateOf( id ),
+                type = Dat.Id
+            ),
+            DataElement(
+                name = "Numero Dia",
+                value = mutableStateOf( numerodia ),
+                type = Dat.Entero
+            ),
+            DataElement(
+                name = "Ejercicios",
+                value = mutableStateOf( ejercicios ),
+                type = Dat.Ls,
+                action = { vm, opt, stringInfo ->
+                    /*vm.goTo(
+                        view = Views.ProximosObjetivosView,
+                        id = dias
+                    )*/
+                }
+            )
+        )
+    }
+}
+
+fun getDia( info: List<DataElement<Any>> ): Dia {
+    return Dia(
+        id = info.find { it.name == "Id" }?.value?.value.toString(),
+        numerodia = info.find { it.name == "Numero Dia" }?.value?.value.toString().toInt(),
+        ejercicios = info.find { it.name == "Ejercicios" }?.value?.value.toString(),
+    )
 }
 
 data class Ejercicio(
@@ -428,7 +547,7 @@ data class Ejercicio(
 data class Serie(
     val id: String,
     var repeticiones: Int = 0,
-    var tejecucionund: String, // TODO: Incluir serie de descanso
+    var tejecucionund: String,
     var patronejecucion: String
 ){
     fun toJson():String{
@@ -450,6 +569,23 @@ data class PatronEjecucion(
     val id: String,
     var tipopatron: String = "",
     var patron: MutableList<Int> = mutableListOf(0,0,0,0,0,0,0,0,0,0)
+){
+    fun toJson():String{
+        return Gson().toJson(this)
+    }
+}
+
+data class Ejecucion(
+    val id: String,
+    var idusuario: String = "",
+    var idrutinaejecucion: String,
+    var dia: Int = 0,
+    var serie: Int = 0,
+    var fechainicioserie: String = "",
+    var fechafinalserie: String = "",
+    var dificultadpercibida: Int = 0, // TODO: Incluir serie de descanso
+    var cantreps: Int = 0,
+    var observacionesejecucion: String = ""
 ){
     fun toJson():String{
         return Gson().toJson(this)

@@ -12,11 +12,10 @@ object Repository {
 
     lateinit var database: DataBase
 
-    suspend fun init(context: Context ){
+    fun init( context: Context ){
         database = DataBase(
             context = context
         )
-        database.copyFiles()
     }
 
     suspend fun loadUser(): Usuario {
@@ -57,6 +56,16 @@ object Repository {
 
     suspend fun loadRutinas( id: String ): List<Rutina> {
         return database.loadRutinas( id = id )
+    }
+
+    suspend fun updateRutina(
+        rutina: Rutina,
+        idList: String
+    ): String? {
+        return database.updateRutina(
+            rutina = rutina,
+            idList = idList
+        )
     }
 
     suspend fun getPng( id: String ): ImageBitmap {
