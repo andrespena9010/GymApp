@@ -2,11 +2,14 @@ package com.bochicapp.gym.data.repository
 
 import android.content.Context
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.lifecycle.viewModelScope
 import com.bochicapp.gym.data.local.DataBase
+import com.bochicapp.gym.data.model.Dia
 import com.bochicapp.gym.data.model.ProximoObjetivo
 import com.bochicapp.gym.data.model.Rutina
 import com.bochicapp.gym.data.model.TomaDatosFisicos
 import com.bochicapp.gym.data.model.Usuario
+import kotlinx.coroutines.launch
 
 object Repository {
 
@@ -15,6 +18,13 @@ object Repository {
     fun init( context: Context ){
         database = DataBase(
             context = context
+        )
+    }
+
+    suspend fun updateListOrder(idList: String, list: List<String> ){
+        database.updateListOrder(
+            idList = idList,
+            list = list
         )
     }
 
@@ -64,6 +74,20 @@ object Repository {
     ): String? {
         return database.updateRutina(
             rutina = rutina,
+            idList = idList
+        )
+    }
+
+    suspend fun loadDias( id: String ): List<Dia> {
+        return database.loadDias( id = id )
+    }
+
+    suspend fun updateDia(
+        dia: Dia,
+        idList: String
+    ): String? {
+        return database.updateDia(
+            dia = dia,
             idList = idList
         )
     }

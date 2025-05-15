@@ -22,6 +22,10 @@ fun String.toRutina(): Rutina {
     return Gson().fromJson( this, Rutina::class.java )
 }
 
+fun String.toDia(): Dia {
+    return Gson().fromJson( this, Dia::class.java )
+}
+
 @Suppress("UNCHECKED_CAST")
 fun String.toList(): List<String> {
     return Gson().fromJson( this, List::class.java ) as List<String>

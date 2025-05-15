@@ -56,6 +56,15 @@ open class GymViewModelClass (): ViewModel() {
         _selectedView.update { view }
     }
 
+    fun updateListOrder( idList: String, list: List<String> ){
+        viewModelScope.launch {
+            repository.updateListOrder(
+                idList = idList,
+                list = list
+            )
+        }
+    }
+
     fun updateUser( user: Usuario ){
         viewModelScope.launch ( Dispatchers.IO ){
             if ( repository.updateUser( user ) ){
@@ -135,7 +144,7 @@ open class GymViewModelClass (): ViewModel() {
 
     fun getDias( id: String, onLoad: ( List<Dia> ) -> Unit ) {
         viewModelScope.launch ( Dispatchers.IO ){
-            onLoad( repository.loadRutinas( id ) )
+            onLoad( repository.loadDias( id ) )
         }
     }
 

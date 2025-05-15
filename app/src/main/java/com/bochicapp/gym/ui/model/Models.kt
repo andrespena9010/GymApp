@@ -188,6 +188,33 @@ sealed class Views {
 
     }
 
+    object DiasView: GymView {
+
+        override val modInfo = ModInfo(
+            size = DpSize(
+                width = 0.dp,
+                height = 0.dp
+            ),
+            useMaxWidth = true,
+            useMaxHeight = true
+        )
+
+        @Composable
+        override fun Content(
+            modifier: Modifier
+        ) {
+
+            modifier
+                .fillMaxSize()
+                .background( MaterialTheme.colorScheme.background )
+
+            DiasCompose(
+                modifier = modifier
+            )
+        }
+
+    }
+
 }
 
 data class ModInfo(

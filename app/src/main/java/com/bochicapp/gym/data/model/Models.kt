@@ -464,10 +464,15 @@ data class Rutina(
                 value = mutableStateOf( dias ),
                 type = Dat.Ls,
                 action = { vm, opt, stringInfo ->
-                    /*vm.goTo(
-                        view = Views.ProximosObjetivosView,
-                        id = dias
-                    )*/
+                    vm.goTo(
+                        view = Views.DiasView,
+                        navInfo = Info(
+                            launcherViewId = stringInfo,
+                            launcherView = Views.RutinasView,
+                            launcherId = id,
+                            targetId = dias
+                        )
+                    )
                 }
             )
         )
@@ -488,8 +493,9 @@ fun getRutina( info: List<DataElement<Any>> ): Rutina {
 
 data class Dia(
     var id: String = "",
-    var numerodia: Int = 0,
-    var ejercicios: String = "",
+    var fechamodificacion: String = "",
+    var guposmusculares: String = "",
+    var ejercicios: String = ""
 ){
     fun toJson():String{
         return Gson().toJson(this)
@@ -503,19 +509,30 @@ data class Dia(
                 type = Dat.Id
             ),
             DataElement(
-                name = "Numero Dia",
-                value = mutableStateOf( numerodia ),
-                type = Dat.Entero
+                name = "Ultima Modificacion",
+                value = mutableStateOf( fechamodificacion ),
+                type = Dat.AutoFecha
+            ),
+
+            DataElement(
+                name = "Grupos musculares",
+                value = mutableStateOf( guposmusculares ),
+                type = Dat.Txt
             ),
             DataElement(
                 name = "Ejercicios",
                 value = mutableStateOf( ejercicios ),
                 type = Dat.Ls,
                 action = { vm, opt, stringInfo ->
-                    /*vm.goTo(
-                        view = Views.ProximosObjetivosView,
-                        id = dias
-                    )*/
+                    vm.goTo(
+                        view = Views.EjerciciosView,
+                        navInfo = Info(
+                            launcherViewId = stringInfo,
+                            launcherView = Views.DiasView,
+                            launcherId = id,
+                            targetId = ejercicios
+                        )
+                    )
                 }
             )
         )
@@ -525,7 +542,8 @@ data class Dia(
 fun getDia( info: List<DataElement<Any>> ): Dia {
     return Dia(
         id = info.find { it.name == "Id" }?.value?.value.toString(),
-        numerodia = info.find { it.name == "Numero Dia" }?.value?.value.toString().toInt(),
+        fechamodificacion = info.find { it.name == "Ultima Modificacion" }?.value?.value.toString(),
+        guposmusculares = info.find { it.name == "Grupos musculares" }?.value?.value.toString(),
         ejercicios = info.find { it.name == "Ejercicios" }?.value?.value.toString(),
     )
 }
@@ -537,39 +555,46 @@ data class Ejercicio(
     var maquina: String = "",
     var idvideoejercicio: String = "",
     var animacionejercicio: String = "",
-    var series: MutableList<String> = mutableListOf()
+    var actividades: MutableList<String> = mutableListOf()
 ){
     fun toJson():String{
         return Gson().toJson(this)
     }
+}
+
+interface ActType
+
+interface Actividad {
+    var id: String
+    var type: ActType
+    var tmin: Double
+    var tmax: Double
+}
+
+sealed class Act {
+    object Serie: ActType
+    object Descanso: ActType
 }
 
 data class Serie(
-    val id: String,
+    override var id: String = "",
+    override var type: ActType = Act.Serie,
+    override var tmin: Double = 0.0,
+    override var tmax: Double = 0.0,
     var repeticiones: Int = 0,
-    var tejecucionund: String,
-    var patronejecucion: String
-){
+    var patron: String = "[0,0,0,0,0,0,0,0,0,0]"
+): Actividad {
     fun toJson():String{
         return Gson().toJson(this)
     }
 }
 
-data class TEjecucionUnd(
-    val id: String,
-    var tmin: Double = 0.0,
-    var tmax: Double = 0.0
-){
-    fun toJson():String{
-        return Gson().toJson(this)
-    }
-}
-
-data class PatronEjecucion(
-    val id: String,
-    var tipopatron: String = "",
-    var patron: MutableList<Int> = mutableListOf(0,0,0,0,0,0,0,0,0,0)
-){
+data class Descanso(
+    override var id: String = "",
+    override var type: ActType = Act.Descanso,
+    override var tmin: Double = 0.0,
+    override var tmax: Double = 0.0,
+): Actividad {
     fun toJson():String{
         return Gson().toJson(this)
     }

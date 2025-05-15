@@ -550,7 +550,7 @@ fun RutinasCompose(
                                                 .background( Color( 0xFFCCCCCC ) )
                                                 .clickable(
                                                     onClick = {
-                                                        //campo.action( viewModel, Options.GoTo,  )
+                                                        campo.action( viewModel, Options.GoTo, listId )
                                                     }
                                                 ),
                                             contentAlignment = Alignment.Center

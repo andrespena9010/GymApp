@@ -330,7 +330,6 @@ fun ProximosObjetivosCompose (
                                                         value = campo.value.value.toString(),
                                                         onValueChange = {
                                                             campo.value.value = it
-                                                            //validaCambios()
                                                         },
                                                         enabled = editObj
                                                     )

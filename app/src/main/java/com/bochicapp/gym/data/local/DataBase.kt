@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import com.bochicapp.gym.R
 import com.bochicapp.gym.data.model.*
+import com.bochicapp.gym.data.repository.Repository.database
 import com.google.gson.Gson
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -97,6 +98,13 @@ class DataBase(
         }
         remMutex( id )
         return res
+    }
+
+    suspend fun updateListOrder( idList: String, list: List<String> ){
+        updateObject(
+            id = idList,
+            bytes = list.toJson().toByteArray()
+        )
     }
 
     suspend fun getUser(): Usuario {
@@ -289,6 +297,58 @@ class DataBase(
             e.printStackTrace( PrintWriter( sw ) )
             // Pendiente usar los sw para documentos de log con los valores correspondientes.
             Log.e("DataBase.updateRutina() -> ", e.message.toString() )
+        }
+        return null
+    }
+
+    suspend fun loadDias( id: String ): List<Dia> {
+        val dias = mutableListOf<Dia>()
+        if ( id.isNotEmpty() ){
+            val ids = getObject( id ).toString( Charsets.UTF_8 )
+            if ( ids.isNotEmpty() ){
+                try {
+                    ids.toList().forEach { idDia ->
+                        dias.add( getObject( idDia ).toString( Charsets.UTF_8 ).toDia() )
+                    }
+                } catch ( e: Exception ){
+                    val sw = StringWriter()
+                    e.printStackTrace( PrintWriter( sw ) )
+                    // Pendiente usar los sw para documentos de log con los valores correspondientes.
+                    Log.e("DataBase.loadDias() -> ", e.message.toString() )
+                }
+            }
+        }
+        return dias.toList()
+    }
+
+    suspend fun updateDia(dia: Dia, idList: String ): String? {
+        try {
+            if ( dia.id.isEmpty() ) {
+                dia.id = UUID.randomUUID().toString()
+                val ejercicios = UUID.randomUUID().toString()
+                if ( updateObject( ejercicios, "[]".toByteArray() ) ) dia.ejercicios = ejercicios
+            }
+            if ( idList.isNotEmpty() ){
+                val res = getObject( idList ).toString( Charsets.UTF_8 )
+                if ( res.isNotEmpty() ){
+                    val list = res.toList().toMutableList()
+                    dia.fechamodificacion = Instant.now().toString()
+                    updateObject( dia.id ,dia.toJson().toByteArray() )
+                    val i = list.indexOfFirst { it == dia.id }
+                    if ( i != -1 ) {
+                        list[i] = dia.id
+                    } else {
+                        list.add( dia.id )
+                    }
+                    updateObject( idList, list.toList().toJson().toByteArray() )
+                }
+            }
+            return dia.id
+        } catch ( e: Exception ){
+            val sw = StringWriter()
+            e.printStackTrace( PrintWriter( sw ) )
+            // Pendiente usar los sw para documentos de log con los valores correspondientes.
+            Log.e("DataBase.updateDia() -> ", e.message.toString() )
         }
         return null
     }
